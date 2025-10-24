@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>GPT-3.5 Turbo Test Coverage Generator</title>
+</head>
+
+<body>
+  <h1>GPT-3.5 Turbo Test Coverage Generator</h1>
+  <form method="GET" action="/search-story-jira">
+    <label for="jira_key">JIRA Key:</label>
+    <input type="text" id="jira_key" name="jira_key" required>
+    <button type="submit">Search</button>
+  </form>
+  <div id="result">
+    <table>
+      <thead>
+        <tr>
+          <th>테스트 범위(내용)</th>
+          <th>AI 테스트커버리지</th>
+          <th>테스트 케이스</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="devTestCoverage"></td>
+          <td id="aiTestCoverage"></td>
+          <td id="testCases"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <script>
+    const form = document.querySelector('form');
+    const aiTestCoverage = document.querySelector('#aiTestCoverage');
+    const devTestCoverage = document.querySelector('#devTestCoverage');
+    const testCases = document.querySelector('#testCases');
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const jiraKey = document.querySelector('#jira_key').value;
+      fetch(`/search-story-jira?jira_key=${jiraKey}`)
+        .then(response => response.text())
+        .then(devTestCoverageValue => {
+          devTestCoverage.innerHTML = devTestCoverageValue;
+          fetch('/generate-text', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `prompt=${encodeURIComponent(devTestCoverageValue)}`
+          })
+            .then(response => response.text())
+            .then(aiTestCoverageValue => {
+              const formattedAiTestCoverage = aiTestCoverageValue.replace(/\n/g, "<br>");
+              aiTestCoverage.innerHTML = formattedAiTestCoverage;
+            })
+            .catch(error => {
+              console.error(error);
+              aiTestCoverage.innerHTML = 'Error occurred while generating text';
+            });
+          fetch('/generate-test-cases', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `prompt=${encodeURIComponent(devTestCoverageValue)}`
+          })
+            .then(response => response.text())
+            .then(testCasesValue => {
+              const formattedTestCases = testCasesValue.replace(/\n/g, "<br>");
+              testCases.innerHTML = formattedTestCases;
+            })
+            .catch(error => {
+              console.error(error);
+              testCases.innerHTML = 'Error occurred while generating test cases';
+            });
+        })
+        .catch(error => {
+          console.error(error);
+          devTestCoverage.innerHTML = 'Error occurred while fetching data';
+        });
+    });
+  </script>
+</body>
+
+</html>
