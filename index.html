@@ -1,86 +1,308 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="ko">
 <head>
-  <title>GPT-3.5 Turbo Test Coverage Generator</title>
-</head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>점심메뉴 룰렛</title>
+  <!-- GSAP CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f13;
+      --panel: #141a21;
+      --panel-2: #0f151b;
+      --text: #e7edf3;
+      --muted: #91a0af;
+      --accent: #6ee7ff;
+      --accent-2: #7c5cff;
+      --win: #2dd4bf;
+    }
 
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 70% -10%, #1b2430 0%, var(--bg) 60%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .app { width: min(1100px, 100%); display: grid; grid-template-columns: 420px 1fr; gap: 24px; }
+    @media (max-width: 900px) { .app { grid-template-columns: 1fr; } }
+
+    .card { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04); padding: 18px; }
+    .title { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.2px; margin-bottom: 8px; font-size: 18px; }
+    .sub { color: var(--muted); font-size: 13px; }
+
+    .controls { display: grid; gap: 14px; }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+
+    input[type="text"], select { background: #0f141a; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-radius: 12px; padding: 12px 14px; font-size: 14px; outline: none; }
+    input::placeholder { color: #718397; }
+
+    button { background: linear-gradient(180deg, #2a3340 0%, #1a2230 100%); color: white; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 12px 16px; font-weight: 600; cursor: pointer; transition: transform .06s ease, box-shadow .2s ease, background .2s ease; }
+    button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-accent { background: linear-gradient(180deg, #3f9dff 0%, #2962ff 100%); }
+    .btn-ghost { background: transparent; border-color: rgba(255,255,255,0.14); }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .tag { display: inline-flex; align-items: center; gap: 8px; background: #0f141a; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 8px 10px; font-size: 13px; }
+    .tag button { padding: 6px 8px; border-radius: 999px; font-size: 12px; }
+
+    .stage { position: relative; display: grid; place-items: center; padding: 18px; min-height: 560px; }
+    /* 역삼각형(▼)이 위에서 원판을 가리키도록: border-top 사용 */
+    .pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--accent-2); filter: drop-shadow(0 4px 12px rgba(0,0,0,0.65)); }
+
+    .wheel-wrap { position: relative; }
+    .wheel-shadow { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 28px 80px rgba(0,0,0,0.6), inset 0 0 0 10px rgba(255,255,255,0.03), inset 0 0 24px rgba(255,255,255,0.05); pointer-events: none; }
+    .wheel { width: min(520px, 85vw); height: min(520px, 85vw); display: block; }
+
+    .center-cap { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+    .cap { width: 110px; height: 110px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ffffff, #d9ecff 40%, #5a7cff 70%, #2331a5 100%); box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 4px rgba(255,255,255,0.6); border: 3px solid rgba(255,255,255,0.8); }
+
+    .result { margin-top: 14px; text-align: center; font-size: 14px; color: var(--muted); }
+    .result b { color: var(--win); font-size: 18px; }
+    .footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 8px; }
+  </style>
+</head>
 <body>
-  <h1>GPT-3.5 Turbo Test Coverage Generator</h1>
-  <form method="GET" action="/search-story-jira">
-    <label for="jira_key">JIRA Key:</label>
-    <input type="text" id="jira_key" name="jira_key" required>
-    <button type="submit">Search</button>
-  </form>
-  <div id="result">
-    <table>
-      <thead>
-        <tr>
-          <th>테스트 범위(내용)</th>
-          <th>AI 테스트커버리지</th>
-          <th>테스트 케이스</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td id="devTestCoverage"></td>
-          <td id="aiTestCoverage"></td>
-          <td id="testCases"></td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="app">
+    <section class="card">
+      <div class="title">🍱 점심 메뉴 설정</div>
+      <div class="sub">메뉴를 추가/삭제하고, 룰렛을 돌려 무작위로 선택하세요.</div>
+
+      <div class="controls">
+        <div class="row">
+          <input id="menuInput" type="text" placeholder="예: 김밥, 비빔밥, 라멘" />
+          <button id="addBtn" class="btn-accent">추가</button>
+        </div>
+        <div class="tags" id="menuTags"></div>
+        <div class="row">
+          <select id="spinMode">
+            <option value="random" selected>무작위 멈춤</option>
+            <option value="choose">특정 메뉴로 멈춤</option>
+          </select>
+          <select id="chooseTarget" disabled></select>
+        </div>
+        <div class="row">
+          <button id="shuffleBtn" class="btn-ghost">색상 섞기</button>
+          <button id="spinBtn" class="btn-accent" style="font-size:16px">🎯 룰렛 돌리기</button>
+        </div>
+        <div class="result" id="result">결과가 여기에 표시됩니다.</div>
+        <div class="footer">원판(파이)+라벨 함께 회전 · 효과링은 정지</div>
+      </div>
+    </section>
+
+    <section class="card stage">
+      <div class="pointer" aria-hidden="true"></div>
+      <div class="wheel-wrap">
+        <svg id="wheel" class="wheel" viewBox="-260 -260 520 520" aria-label="메뉴 룰렛"></svg>
+        <div class="wheel-shadow"></div>
+        <div class="center-cap"><div class="cap" id="cap"></div></div>
+      </div>
+    </section>
   </div>
+
   <script>
-    const form = document.querySelector('form');
-    const aiTestCoverage = document.querySelector('#aiTestCoverage');
-    const devTestCoverage = document.querySelector('#devTestCoverage');
-    const testCases = document.querySelector('#testCases');
-    form.addEventListener('submit', (event) => {
-      event.preventDefault();
-      const jiraKey = document.querySelector('#jira_key').value;
-      fetch(`/search-story-jira?jira_key=${jiraKey}`)
-        .then(response => response.text())
-        .then(devTestCoverageValue => {
-          devTestCoverage.innerHTML = devTestCoverageValue;
-          fetch('/generate-text', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: `prompt=${encodeURIComponent(devTestCoverageValue)}`
-          })
-            .then(response => response.text())
-            .then(aiTestCoverageValue => {
-              const formattedAiTestCoverage = aiTestCoverageValue.replace(/\n/g, "<br>");
-              aiTestCoverage.innerHTML = formattedAiTestCoverage;
-            })
-            .catch(error => {
-              console.error(error);
-              aiTestCoverage.innerHTML = 'Error occurred while generating text';
-            });
-          fetch('/generate-test-cases', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: `prompt=${encodeURIComponent(devTestCoverageValue)}`
-          })
-            .then(response => response.text())
-            .then(testCasesValue => {
-              const formattedTestCases = testCasesValue.replace(/\n/g, "<br>");
-              testCases.innerHTML = formattedTestCases;
-            })
-            .catch(error => {
-              console.error(error);
-              testCases.innerHTML = 'Error occurred while generating test cases';
-            });
-        })
-        .catch(error => {
-          console.error(error);
-          devTestCoverage.innerHTML = 'Error occurred while fetching data';
-        });
+    const $ = (sel) => document.querySelector(sel);
+    const menuInput = $('#menuInput');
+    const addBtn = $('#addBtn');
+    const spinBtn = $('#spinBtn');
+    const shuffleBtn = $('#shuffleBtn');
+    const tags = $('#menuTags');
+    const wheel = $('#wheel');
+    const resultEl = $('#result');
+    const spinModeSel = $('#spinMode');
+    const chooseTargetSel = $('#chooseTarget');
+
+    const R = 240;
+    const TEXT_R = R * 0.62;
+
+    const basePalette = ['#4f46e5','#06b6d4','#22c55e','#f59e0b','#ef4444','#a855f7','#10b981','#f97316','#eab308','#3b82f6','#ec4899','#14b8a6'];
+    let palette = [...basePalette];
+
+    let items = ['김밥','비빔밥','라멘','돈까스','샐러드','김치찌개'];
+    let spinning = false;
+
+    const deg2rad = (d) => (d * Math.PI) / 180;
+    const polar = (r, deg) => [ r * Math.cos(deg2rad(deg)), r * Math.sin(deg2rad(deg)) ];
+
+    function describeSlice(startDeg, endDeg) {
+      const [x0, y0] = [0, 0];
+      const [x1, y1] = polar(R, startDeg);
+      const [x2, y2] = polar(R, endDeg);
+      const largeArc = endDeg - startDeg <= 180 ? 0 : 1;
+      return `M ${x0} ${y0} L ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+    }
+    const midAngle = (start, end) => (start + end) / 2;
+    function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function renderWheel(){
+      wheel.innerHTML = '';
+      const n = items.length; if (!n) return;
+      const sliceAngle = 360 / n;
+
+      // ===== master group: rotate slices + labels together =====
+      const wheelG = document.createElementNS('http://www.w3.org/2000/svg','g');
+      wheelG.setAttribute('id','wheelGroup');
+      wheel.appendChild(wheelG);
+      gsap.set(wheelG, { svgOrigin: '0 0' });
+
+      // Slices (part of wheelGroup)
+      const slicesG = document.createElementNS('http://www.w3.org/2000/svg','g');
+      slicesG.setAttribute('id','slicesGroup');
+      wheelG.appendChild(slicesG);
+
+      // Labels (part of wheelGroup)
+      const labelsG = document.createElementNS('http://www.w3.org/2000/svg','g');
+      labelsG.setAttribute('id','labelsGroup');
+      wheelG.appendChild(labelsG);
+
+      // Static FX ring (visual, non-rotating)
+      const fxG = document.createElementNS('http://www.w3.org/2000/svg','g');
+      fxG.setAttribute('id','fxRing');
+      wheel.appendChild(fxG);
+
+      // Draw slices + labels
+      items.forEach((label, i) => {
+        const start = i * sliceAngle - 90;
+        const end = start + sliceAngle;
+        const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d', describeSlice(start, end));
+        path.setAttribute('fill', palette[i % palette.length]);
+        path.setAttribute('stroke', 'rgba(0,0,0,0.35)');
+        path.setAttribute('stroke-width', '1');
+        path.setAttribute('data-index', i);
+        slicesG.appendChild(path);
+
+        const m = midAngle(start, end);
+        const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+        text.classList.add('wheel-label');
+        text.textContent = label;
+        text.setAttribute('text-anchor','middle');
+        text.setAttribute('dominant-baseline','middle');
+        text.setAttribute('fill','#0b0f13');
+        text.setAttribute('font-size', n>10 ? '12' : '14');
+        text.setAttribute('font-weight','700');
+        // Labels rotate WITH the wheel → no counter-rotation
+        text.setAttribute('transform', `rotate(${m}) translate(${TEXT_R},0)`);
+        labelsG.appendChild(text);
+      });
+
+      // Build static FX ring (alternating wedges near rim)
+      const stripes = 36; const stripeAngle = 360 / stripes;
+      for (let i=0;i<stripes;i++){
+        const a0 = i * stripeAngle - 90, a1 = a0 + stripeAngle;
+        const innerR = R*0.88, outerR = R*0.98;
+        const [x1,y1] = polar(innerR,a0); const [x2,y2] = polar(outerR,a0);
+        const [x3,y3] = polar(outerR,a1); const [x4,y4] = polar(innerR,a1);
+        const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+        p.setAttribute('d', `M ${x1} ${y1} L ${x2} ${y2} A ${outerR} ${outerR} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${innerR} ${innerR} 0 0 0 ${x1} ${y1} Z`);
+        p.setAttribute('fill', i%2===0 ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)');
+        fxG.appendChild(p);
+      }
+    }
+
+    function renderTags(){
+      tags.innerHTML = '';
+      items.forEach((name, idx) => {
+        const el = document.createElement('span'); el.className='tag'; el.innerHTML = `<span>${name}</span>`;
+        const del=document.createElement('button'); del.textContent='삭제';
+        del.addEventListener('click', ()=>{ items.splice(idx,1); syncUI(); });
+        el.appendChild(del); tags.appendChild(el);
+      });
+      chooseTargetSel.innerHTML='';
+      items.forEach((name, i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=name; chooseTargetSel.appendChild(opt); });
+    }
+    function syncUI(){ renderTags(); renderWheel(); }
+
+    // ===== Spinning: rotate the WHOLE wheelGroup (slices + labels) =====
+    function spinToIndex(targetIndex){
+      const n = items.length; if (n===0) return;
+      const slice = 360 / n;
+      const targetStart = targetIndex * slice - 90;
+      const targetMid = targetStart + slice/2;
+      const extraTurns = 5 + Math.floor(Math.random()*3);
+
+      const wheelGroup = document.getElementById('wheelGroup');
+      // 현재 회전각(누적)을 고려해 추가 회전각(delta) 계산
+      const currentAbs = Number(gsap.getProperty(wheelGroup, 'rotation')) || 0; // e.g. 1080, -30, etc.
+      const currentNorm = ((currentAbs % 360) + 360) % 360; // 0~359
+      // (targetMid + currentNorm + delta) % 360 == 0  → delta = k*360 - (targetMid + currentNorm)
+      // Align target mid to pointer at -90° (== 270° mod 360)
+      const delta = extraTurns*360 + 270 - ((targetMid + currentNorm) % 360);
+      const finalAbs = currentAbs + delta; // 절대 목표 각도
+
+      spinning = true;
+      [spinBtn, addBtn, shuffleBtn, spinModeSel].forEach(b=>b.disabled=true);
+      chooseTargetSel.disabled = spinModeSel.value !== 'choose';
+
+      gsap.set(wheelGroup, { svgOrigin: '0 0' });
+      gsap.to(wheelGroup, {
+        rotation: finalAbs,
+        duration: 5.5,
+        ease: 'power4.out',
+        onComplete: () => {
+          spinning = false;
+          [spinBtn, addBtn, shuffleBtn, spinModeSel].forEach(b=>b.disabled=false);
+          const winner = items[targetIndex];
+          resultEl.innerHTML = `결과: <b>${winner}</b>`;
+          highlightWinner(targetIndex);
+        }
+      });
+    }
+
+    function highlightWinner(index){
+      const slice = document.querySelector(`#slicesGroup path[data-index="${index}"]`);
+      if (!slice) return;
+      gsap.to(slice, { duration: 0.2, attr: { 'stroke-width': 3, stroke: 'rgba(255,255,255,0.9)' } });
+      gsap.to(slice, { duration: 0.8, yoyo: true, repeat: 1, ease: 'power1.out', attr: { 'stroke-width': 1, stroke: 'rgba(0,0,0,0.35)' } });
+    }
+
+    function handleSpin(){
+      if (spinning || items.length===0) return;
+      const targetIndex = (spinModeSel.value==='choose') ? Number(chooseTargetSel.value||0) : Math.floor(Math.random()*items.length);
+      spinToIndex(targetIndex);
+    }
+
+    addBtn.addEventListener('click', ()=>{
+      const raw = menuInput.value.trim(); if(!raw) return;
+      const parts = raw.split(',').map(s=>s.trim()).filter(Boolean);
+      items.push(...parts); menuInput.value=''; syncUI();
     });
+    menuInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') addBtn.click(); });
+    shuffleBtn.addEventListener('click', ()=>{ palette = shuffle(palette); renderWheel(); });
+    spinBtn.addEventListener('click', handleSpin);
+    spinModeSel.addEventListener('change', ()=>{ chooseTargetSel.disabled = spinModeSel.value !== 'choose'; });
+
+    // ===== Init =====
+    syncUI();
+
+    // ===== Tests =====
+    console.assert(typeof spinToIndex==='function', 'spinToIndex exposed');
+
+    // 수학 함수: 현재 각, 아이템 수, 목표 인덱스, 추가회전수 → delta
+    function __computeDeltaRotation(currentAbs, n, idx, extra){
+      const slice=360/n; const targetStart=idx*slice-90; const targetMid=targetStart+slice/2;
+      const currentNorm=((currentAbs%360)+360)%360; return extra*360 + 270 - ((targetMid + currentNorm)%360);
+    }
+
+    // 기존 정적 케이스(현재각 0)
+    (function(){ const n=4, idx=1; const delta=__computeDeltaRotation(0,n,idx,6); const slice=360/n; const mid=(idx*slice-90)+slice/2; console.assert(Math.abs(((mid+0+delta)%360) - 270) < 1e-6, 'align @270°(-90°), even n'); })();
+    (function(){ const n=5, idx=3; const delta=__computeDeltaRotation(0,n,idx,6); const slice=360/n; const mid=(idx*slice-90)+slice/2; console.assert(Math.abs(((mid+0+delta)%360) - 270) < 1e-6, 'align @270°(-90°), odd n'); })();
+
+    // 누적 회전이 있을 때도 정렬되는지 검사
+    (function(){ const current=137; const n=6, idx=4; const delta=__computeDeltaRotation(current,n,idx,5); const slice=360/n; const mid=(idx*slice-90)+slice/2; const sum=(mid+((current%360)+360)%360+delta)%360; console.assert(Math.abs(sum - 270) < 1e-6, 'align with non-zero current to 270°(-90°)'); })();
+
+    // DOM 무결성
+    (function(){ const n=items.length; const sliceCount=document.querySelectorAll('#slicesGroup path').length; console.assert(n===sliceCount, 'slices count matches items'); })();
+    (function(){ const wg=document.getElementById('wheelGroup'); const lg=document.getElementById('labelsGroup'); const sg=document.getElementById('slicesGroup'); console.assert(lg.parentNode===wg && sg.parentNode===wg, 'labels & slices rotate together'); })();
   </script>
 </body>
-
 </html>
