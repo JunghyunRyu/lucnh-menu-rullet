@@ -4,6 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>점심메뉴 룰렛</title>
+  <!-- PWA: Manifest & Icons & Theme -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#0b0f13" />
+  <link rel="icon" href="./image.png" type="image/png" />
+  <link rel="apple-touch-icon" href="./image.png" />
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="점심메뉴 룰렛" />
+  <meta property="og:title" content="점심메뉴 룰렛 | 점심 메뉴 랜덤 추천" />
+  <meta property="og:description" content="GSAP으로 물리감 있게 도는 점심 메뉴 룰렛. 파이와 라벨이 함께 회전하고, 포인터에 맞춰 정확히 멈춥니다." />
+  <meta property="og:image" content="./og_image.png" />
+  <meta property="og:url" content="https://github.dev/JunghyunRyu/lucnh-menu-rullet" >
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="점심메뉴 룰렛 | 점심 메뉴 랜덤 추천" />
+  <meta name="twitter:description" content="GSAP으로 물리감 있게 도는 점심 메뉴 룰렛." />
+  <meta name="twitter:image" content="./og_image.png" />
+
   <!-- GSAP CDN -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <style>
@@ -283,6 +301,15 @@
 
     // ===== Init =====
     syncUI();
+
+    // ===== PWA: register Service Worker =====
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('SW registered', reg.scope))
+          .catch(err => console.warn('SW registration failed', err));
+      });
+    }
 
     // ===== Tests =====
     console.assert(typeof spinToIndex==='function', 'spinToIndex exposed');
