@@ -1,5 +1,5 @@
-/* Simple App Shell cache for Lunch Menu Roulette (v1.0.0) */
-const CACHE_NAME = 'lunch-roulette-v1.0.0';
+/* Simple App Shell cache for Lunch Menu Roulette (v1.1.0) */
+const CACHE_NAME = 'lunch-roulette-v1.1.0';
 const APP_SHELL = [
   './',
   './index.html',

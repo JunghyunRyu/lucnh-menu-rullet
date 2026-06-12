@@ -14,12 +14,12 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="점심메뉴 룰렛" />
   <meta property="og:title" content="점심메뉴 룰렛 | 점심 메뉴 랜덤 추천" />
-  <meta property="og:description" content="GSAP으로 물리감 있게 도는 점심 메뉴 룰렛. 파이와 라벨이 함께 회전하고, 포인터에 맞춰 정확히 멈춥니다." />
+  <meta property="og:description" content="선호 음식 유형 + 내 위치 기반 점심 메뉴 추천. 룰렛으로도 돌릴 수 있어요." />
   <meta property="og:image" content="./og_image.png" />
   <meta property="og:url" content="https://github.dev/JunghyunRyu/lucnh-menu-rullet" >
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="점심메뉴 룰렛 | 점심 메뉴 랜덤 추천" />
-  <meta name="twitter:description" content="GSAP으로 물리감 있게 도는 점심 메뉴 룰렛." />
+  <meta name="twitter:description" content="선호 음식 유형 + 내 위치 기반 점심 메뉴 추천." />
   <meta name="twitter:image" content="./og_image.png" />
 
   <!-- GSAP CDN -->
@@ -43,13 +43,27 @@
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
       background: radial-gradient(1200px 800px at 70% -10%, #1b2430 0%, var(--bg) 60%);
       color: var(--text);
-      display: grid;
-      place-items: center;
       padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
     }
 
-    .app { width: min(1100px, 100%); display: grid; grid-template-columns: 420px 1fr; gap: 24px; }
+    .topbar { width: min(1100px, 100%); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .brand { font-weight: 800; font-size: 20px; letter-spacing: 0.2px; }
+    .tabs { display: flex; gap: 8px; }
+    .tab { background: transparent; border: 1px solid rgba(255,255,255,0.14); color: var(--muted); border-radius: 999px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+    .tab.active { background: linear-gradient(180deg, #3f9dff 0%, #2962ff 100%); color: #fff; border-color: transparent; }
+
+    main { width: min(1100px, 100%); }
+    .view.hidden { display: none; }
+
+    .app { width: 100%; display: grid; grid-template-columns: 420px 1fr; gap: 24px; }
     @media (max-width: 900px) { .app { grid-template-columns: 1fr; } }
+
+    .reco-grid { display: grid; grid-template-columns: 420px 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 900px) { .reco-grid { grid-template-columns: 1fr; } }
 
     .card { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04); padding: 18px; }
     .title { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.2px; margin-bottom: 8px; font-size: 18px; }
@@ -59,7 +73,7 @@
     .row { display: flex; gap: 10px; }
     .row > * { flex: 1; }
 
-    input[type="text"], select { background: #0f141a; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-radius: 12px; padding: 12px 14px; font-size: 14px; outline: none; }
+    input[type="text"], input[type="password"], select { background: #0f141a; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-radius: 12px; padding: 12px 14px; font-size: 14px; outline: none; }
     input::placeholder { color: #718397; }
 
     button { background: linear-gradient(180deg, #2a3340 0%, #1a2230 100%); color: white; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 12px 16px; font-weight: 600; cursor: pointer; transition: transform .06s ease, box-shadow .2s ease, background .2s ease; }
@@ -68,11 +82,52 @@
 
     .btn-accent { background: linear-gradient(180deg, #3f9dff 0%, #2962ff 100%); }
     .btn-ghost { background: transparent; border-color: rgba(255,255,255,0.14); }
+    .btn-win { background: linear-gradient(180deg, #2dd4bf 0%, #0d9488 100%); }
 
     .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
     .tag { display: inline-flex; align-items: center; gap: 8px; background: #0f141a; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 8px 10px; font-size: 13px; }
     .tag button { padding: 6px 8px; border-radius: 999px; font-size: 12px; }
 
+    /* ===== 추천 뷰 ===== */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip { background: #0f141a; border: 1px solid rgba(255,255,255,0.12); color: var(--muted); border-radius: 999px; padding: 10px 14px; font-size: 14px; cursor: pointer; user-select: none; }
+    .chip.on { background: linear-gradient(180deg, #3f9dff 0%, #2962ff 100%); color: #fff; border-color: transparent; }
+
+    details.opt { margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; }
+    details.opt summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+    details.opt .inner { display: grid; gap: 10px; margin-top: 10px; }
+    details.opt .hint { color: var(--muted); font-size: 12px; line-height: 1.6; }
+    details.opt .hint a { color: var(--accent); }
+
+    .status { color: var(--muted); font-size: 13px; min-height: 18px; }
+    .reco-result { display: none; margin-top: 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; background: rgba(255,255,255,0.02); }
+    .reco-result.show { display: block; }
+    .reco-menu { font-size: 30px; font-weight: 800; color: var(--win); margin: 4px 0 6px; }
+    .reco-why { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .reco-cands { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .reco-cands .cand { background: #0f141a; border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; padding: 7px 12px; font-size: 13px; }
+    .reco-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .reco-actions button, .reco-actions a { flex: 1 1 auto; text-align: center; text-decoration: none; font-size: 13px; padding: 11px 12px; border-radius: 12px; }
+    a.linkbtn { display: inline-block; background: linear-gradient(180deg, #2a3340 0%, #1a2230 100%); color: #fff; border: 1px solid rgba(255,255,255,0.08); font-weight: 600; }
+    a.linkbtn.naver { background: linear-gradient(180deg, #06c167 0%, #03a557 100%); border-color: transparent; }
+    a.linkbtn.kakao { background: linear-gradient(180deg, #ffe14a 0%, #f7d000 100%); color: #1a1a1a; border-color: transparent; }
+
+    .nearby { margin-top: 14px; display: none; }
+    .nearby.show { display: block; }
+    .nearby h4 { margin: 0 0 8px; font-size: 14px; }
+    .place { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; margin-bottom: 8px; background: #0f141a; }
+    .place .nm { font-size: 14px; font-weight: 600; }
+    .place .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .place a { color: var(--accent); font-size: 13px; text-decoration: none; white-space: nowrap; }
+
+    .history { margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; }
+    .history .hd { display: flex; justify-content: space-between; align-items: center; }
+    .history .hd span { font-size: 13px; color: var(--muted); }
+    .history .hd button { padding: 6px 10px; font-size: 12px; border-radius: 999px; }
+    .history ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+    .history li { background: #0f141a; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: var(--muted); }
+
+    /* ===== 룰렛 뷰 ===== */
     .stage { position: relative; display: grid; place-items: center; padding: 18px; min-height: 560px; }
     /* 역삼각형(▼)이 위에서 원판을 가리키도록: border-top 사용 */
     .pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--accent-2); filter: drop-shadow(0 4px 12px rgba(0,0,0,0.65)); }
@@ -90,45 +145,370 @@
   </style>
 </head>
 <body>
-  <div class="app">
-    <section class="card">
-      <div class="title">🍱 점심 메뉴 설정</div>
-      <div class="sub">메뉴를 추가/삭제하고, 룰렛을 돌려 무작위로 선택하세요.</div>
+  <header class="topbar">
+    <div class="brand">🍱 점심메뉴 룰렛</div>
+    <nav class="tabs">
+      <button class="tab active" data-view="reco">✨ 스마트 추천</button>
+      <button class="tab" data-view="roulette">🎡 룰렛</button>
+    </nav>
+  </header>
 
-      <div class="controls">
-        <div class="row">
-          <input id="menuInput" type="text" placeholder="예: 김밥, 비빔밥, 라멘" />
-          <button id="addBtn" class="btn-accent">추가</button>
-        </div>
-        <div class="tags" id="menuTags"></div>
-        <div class="row">
-          <select id="spinMode">
-            <option value="random" selected>무작위 멈춤</option>
-            <option value="choose">특정 메뉴로 멈춤</option>
-          </select>
-          <select id="chooseTarget" disabled></select>
-        </div>
-        <div class="row">
-          <button id="shuffleBtn" class="btn-ghost">색상 섞기</button>
-          <button id="spinBtn" class="btn-accent" style="font-size:16px">🎯 룰렛 돌리기</button>
-        </div>
-        <div class="result" id="result">결과가 여기에 표시됩니다.</div>
-        <div class="footer">원판(파이)+라벨 함께 회전 · 효과링은 정지</div>
-      </div>
-    </section>
+  <main>
+    <!-- ===================== 스마트 추천 뷰 ===================== -->
+    <div id="view-reco" class="view">
+      <div class="reco-grid">
+        <section class="card">
+          <div class="title">😋 좋아하는 음식 유형</div>
+          <div class="sub">선택하면 자동 저장됩니다. 선호 유형에 추천 가중치가 붙고, 최근 3일 안에 먹은 메뉴는 추천에서 빠져요.</div>
+          <div class="chips" id="prefChips"></div>
 
-    <section class="card stage">
-      <div class="pointer" aria-hidden="true"></div>
-      <div class="wheel-wrap">
-        <svg id="wheel" class="wheel" viewBox="-260 -260 520 520" aria-label="메뉴 룰렛"></svg>
-        <div class="wheel-shadow"></div>
-        <div class="center-cap"><div class="cap" id="cap"></div></div>
+          <details class="opt" id="kakaoOpt">
+            <summary>⚙️ 주변 음식점 실시간 검색 연동 (선택)</summary>
+            <div class="inner">
+              <div class="hint">
+                카카오 디벨로퍼스에서 발급한 <b>REST API 키</b>를 넣으면 추천 메뉴 기준으로
+                반경 1km 음식점을 거리순으로 보여줍니다. 키는 이 기기(localStorage)에만 저장됩니다.<br/>
+                키 발급: <a href="https://developers.kakao.com/" target="_blank" rel="noopener">developers.kakao.com</a>
+              </div>
+              <div class="row">
+                <input id="kakaoKey" type="password" placeholder="KakaoAK REST API 키 (선택)" autocomplete="off" />
+                <button id="kakaoSaveBtn" class="btn-ghost" style="flex:0 0 auto">저장</button>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <section class="card">
+          <div class="title">📍 오늘 뭐 먹지?</div>
+          <div class="sub">내 위치를 확인하고, 선호 유형과 최근 기록을 반영해 메뉴를 추천합니다. 추천 메뉴는 네이버 지도에서 바로 주변 맛집 리뷰를 확인할 수 있어요.</div>
+
+          <div class="controls" style="margin-top:14px">
+            <button id="recoBtn" class="btn-accent" style="font-size:16px">✨ 내 위치 기반 추천 받기</button>
+            <div class="status" id="recoStatus"></div>
+          </div>
+
+          <div class="reco-result" id="recoResult">
+            <div class="sub">오늘의 추천</div>
+            <div class="reco-menu" id="recoMenu"></div>
+            <div class="reco-why" id="recoWhy"></div>
+            <div class="reco-cands" id="recoCands"></div>
+            <div class="reco-actions">
+              <a id="naverLink" class="linkbtn naver" target="_blank" rel="noopener">🟢 네이버 지도 리뷰 보기</a>
+              <a id="kakaoLink" class="linkbtn kakao" target="_blank" rel="noopener">🗺️ 카카오맵에서 보기</a>
+              <button id="rerollBtn" class="btn-ghost">🔁 다시 추천</button>
+              <button id="toRouletteBtn" class="btn-ghost">🎡 후보로 룰렛 돌리기</button>
+              <button id="ateBtn" class="btn-win">✅ 오늘 이거 먹음</button>
+            </div>
+
+            <div class="nearby" id="nearby">
+              <h4>🍽️ 주변 음식점 (가까운 순)</h4>
+              <div id="nearbyList"></div>
+            </div>
+          </div>
+
+          <div class="history" id="historyBox">
+            <div class="hd">
+              <span>🗓️ 최근 먹은 메뉴 (추천에서 자동 제외)</span>
+              <button id="clearHistoryBtn" class="btn-ghost">기록 지우기</button>
+            </div>
+            <ul id="historyList"></ul>
+          </div>
+        </section>
       </div>
-    </section>
-  </div>
+    </div>
+
+    <!-- ===================== 룰렛 뷰 ===================== -->
+    <div id="view-roulette" class="view hidden">
+      <div class="app">
+        <section class="card">
+          <div class="title">🍱 점심 메뉴 설정</div>
+          <div class="sub">메뉴를 추가/삭제하고, 룰렛을 돌려 무작위로 선택하세요.</div>
+
+          <div class="controls">
+            <div class="row">
+              <input id="menuInput" type="text" placeholder="예: 김밥, 비빔밥, 라멘" />
+              <button id="addBtn" class="btn-accent">추가</button>
+            </div>
+            <div class="tags" id="menuTags"></div>
+            <div class="row">
+              <select id="spinMode">
+                <option value="random" selected>무작위 멈춤</option>
+                <option value="choose">특정 메뉴로 멈춤</option>
+              </select>
+              <select id="chooseTarget" disabled></select>
+            </div>
+            <div class="row">
+              <button id="shuffleBtn" class="btn-ghost">색상 섞기</button>
+              <button id="spinBtn" class="btn-accent" style="font-size:16px">🎯 룰렛 돌리기</button>
+            </div>
+            <div class="result" id="result">결과가 여기에 표시됩니다.</div>
+            <div class="footer">원판(파이)+라벨 함께 회전 · 효과링은 정지</div>
+          </div>
+        </section>
+
+        <section class="card stage">
+          <div class="pointer" aria-hidden="true"></div>
+          <div class="wheel-wrap">
+            <svg id="wheel" class="wheel" viewBox="-260 -260 520 520" aria-label="메뉴 룰렛"></svg>
+            <div class="wheel-shadow"></div>
+            <div class="center-cap"><div class="cap" id="cap"></div></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
 
   <script>
     const $ = (sel) => document.querySelector(sel);
+
+    // ===================== 탭 전환 =====================
+    const views = { reco: $('#view-reco'), roulette: $('#view-roulette') };
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => switchView(tab.dataset.view));
+    });
+    function switchView(name){
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+      Object.entries(views).forEach(([k, el]) => el.classList.toggle('hidden', k !== name));
+    }
+
+    // ===================== 스마트 추천 =====================
+    const CATEGORIES = {
+      '한식':   ['김치찌개','된장찌개','순두부찌개','비빔밥','제육볶음','불고기','국밥','갈비탕','냉면','보쌈','칼국수','부대찌개'],
+      '중식':   ['짜장면','짬뽕','탕수육','마라탕','마라샹궈','중화비빔밥','볶음밥'],
+      '일식':   ['초밥','라멘','돈까스','우동','규동','소바','일본식 카레'],
+      '양식':   ['파스타','피자','스테이크','리조또','샌드위치','오므라이스'],
+      '분식':   ['떡볶이','김밥','라면','순대','만두','쫄면','우동'],
+      '아시안': ['쌀국수','팟타이','분짜','나시고렝','카오팟','쌀국수 볶음'],
+      '패스트푸드': ['햄버거','치킨','핫도그','타코'],
+      '샐러드/건강식': ['샐러드','포케','닭가슴살 도시락','샐러드 파스타','그릭요거트 볼']
+    };
+    const PREF_KEY = 'lmr_prefs';
+    const HIST_KEY = 'lmr_history';
+    const KAKAO_KEY = 'lmr_kakao_key';
+    const HIST_EXCLUDE_DAYS = 3;
+
+    const loadJSON = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; } };
+    const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+    let prefs = loadJSON(PREF_KEY, []);
+    let history = loadJSON(HIST_KEY, []);
+    let lastReco = null;   // { menu, candidates, category }
+    let lastCoords = null; // { lat, lng }
+
+    // --- 선호 유형 칩 ---
+    const prefChips = $('#prefChips');
+    function renderPrefs(){
+      prefChips.innerHTML = '';
+      Object.keys(CATEGORIES).forEach(cat => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip' + (prefs.includes(cat) ? ' on' : '');
+        chip.textContent = cat;
+        chip.addEventListener('click', () => {
+          prefs = prefs.includes(cat) ? prefs.filter(c => c !== cat) : [...prefs, cat];
+          saveJSON(PREF_KEY, prefs);
+          renderPrefs();
+        });
+        prefChips.appendChild(chip);
+      });
+    }
+
+    // --- 히스토리 ---
+    const historyList = $('#historyList');
+    function recentMenus(days){
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      return history.filter(h => h.ts >= cutoff).map(h => h.menu);
+    }
+    function renderHistory(){
+      historyList.innerHTML = '';
+      const recent = history.slice(-10).reverse();
+      if (!recent.length) {
+        const li = document.createElement('li'); li.textContent = '아직 기록이 없어요';
+        historyList.appendChild(li); return;
+      }
+      recent.forEach(h => {
+        const li = document.createElement('li');
+        const d = new Date(h.ts);
+        li.textContent = `${h.menu} · ${d.getMonth()+1}/${d.getDate()}`;
+        historyList.appendChild(li);
+      });
+    }
+    $('#clearHistoryBtn').addEventListener('click', () => {
+      history = []; saveJSON(HIST_KEY, history); renderHistory();
+    });
+
+    // --- 추천 엔진: 선호 가중치 + 최근 기록 제외 ---
+    function buildPool(){
+      const excluded = new Set(recentMenus(HIST_EXCLUDE_DAYS));
+      const pool = [];
+      Object.entries(CATEGORIES).forEach(([cat, menus]) => {
+        const preferred = prefs.includes(cat);
+        const weight = prefs.length ? (preferred ? 5 : 1) : 2;
+        menus.forEach(menu => {
+          if (excluded.has(menu)) return;
+          pool.push({ menu, cat, weight, preferred });
+        });
+      });
+      return pool;
+    }
+    function weightedPick(pool){
+      const total = pool.reduce((s, p) => s + p.weight, 0);
+      let r = Math.random() * total;
+      for (const p of pool) { r -= p.weight; if (r <= 0) return p; }
+      return pool[pool.length - 1];
+    }
+    function pickRecommendation(){
+      let pool = buildPool();
+      if (!pool.length) {
+        // 전부 최근에 먹었으면 제외 없이 다시
+        pool = [];
+        Object.entries(CATEGORIES).forEach(([cat, menus]) => {
+          const preferred = prefs.includes(cat);
+          const weight = prefs.length ? (preferred ? 5 : 1) : 2;
+          menus.forEach(menu => pool.push({ menu, cat, weight, preferred }));
+        });
+      }
+      const picks = [];
+      const seen = new Set();
+      let guard = 0;
+      while (picks.length < Math.min(3, pool.length) && guard++ < 200) {
+        const p = weightedPick(pool);
+        if (seen.has(p.menu)) continue;
+        seen.add(p.menu); picks.push(p);
+      }
+      return picks;
+    }
+
+    // --- 위치 ---
+    function getLocation(){
+      return new Promise(resolve => {
+        if (!('geolocation' in navigator)) return resolve(null);
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => resolve(null),
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+        );
+      });
+    }
+
+    // --- 카카오 로컬: 주변 음식점 (선택 기능) ---
+    const kakaoKeyInput = $('#kakaoKey');
+    kakaoKeyInput.value = localStorage.getItem(KAKAO_KEY) || '';
+    $('#kakaoSaveBtn').addEventListener('click', () => {
+      localStorage.setItem(KAKAO_KEY, kakaoKeyInput.value.trim());
+      recoStatus.textContent = kakaoKeyInput.value.trim() ? '카카오 키 저장 완료. 추천 시 주변 음식점을 함께 검색합니다.' : '카카오 키를 제거했습니다.';
+    });
+
+    async function fetchNearby(menu, coords){
+      const key = (localStorage.getItem(KAKAO_KEY) || '').trim();
+      if (!key || !coords) return null;
+      const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(menu)}&x=${coords.lng}&y=${coords.lat}&radius=1000&size=8&category_group_code=FD6`;
+      const res = await fetch(url, { headers: { Authorization: `KakaoAK ${key}` } });
+      if (!res.ok) throw new Error(`카카오 API 오류 (${res.status})`);
+      const data = await res.json();
+      return (data.documents || [])
+        .map(d => ({ name: d.place_name, dist: Number(d.distance), addr: d.road_address_name || d.address_name, cat: (d.category_name || '').split('>').pop().trim(), url: d.place_url }))
+        .sort((a, b) => a.dist - b.dist);
+    }
+
+    // --- 결과 렌더 ---
+    const recoStatus = $('#recoStatus');
+    const recoResult = $('#recoResult');
+    const nearbyBox = $('#nearby');
+    const nearbyList = $('#nearbyList');
+
+    function renderReco(picks, coords){
+      const top = picks[0];
+      lastReco = { menu: top.menu, category: top.cat, candidates: picks.map(p => p.menu) };
+      lastCoords = coords;
+
+      $('#recoMenu').textContent = top.menu;
+      const reasons = [];
+      reasons.push(top.preferred ? `선호하는 ${top.cat} 유형` : `오늘은 색다르게 ${top.cat}`);
+      reasons.push(`최근 ${HIST_EXCLUDE_DAYS}일 내 안 먹은 메뉴`);
+      reasons.push(coords ? '내 위치 기준 검색 링크 연결됨' : '위치 미사용 (권한 거부/실패)');
+      $('#recoWhy').textContent = reasons.join(' · ');
+
+      const cands = $('#recoCands');
+      cands.innerHTML = '';
+      picks.slice(1).forEach(p => {
+        const el = document.createElement('span');
+        el.className = 'cand';
+        el.textContent = `차선책: ${p.menu} (${p.cat})`;
+        cands.appendChild(el);
+      });
+
+      const q = encodeURIComponent(`${top.menu} 맛집`);
+      $('#naverLink').href = `https://map.naver.com/p/search/${q}`;
+      $('#kakaoLink').href = `https://map.kakao.com/?q=${q}`;
+
+      recoResult.classList.add('show');
+      nearbyBox.classList.remove('show');
+      nearbyList.innerHTML = '';
+    }
+
+    function renderNearby(places){
+      nearbyList.innerHTML = '';
+      if (!places || !places.length) {
+        nearbyBox.classList.remove('show');
+        return;
+      }
+      places.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'place';
+        div.innerHTML = `<div><div class="nm">${p.name}</div><div class="meta">${p.cat} · ${p.dist}m · ${p.addr}</div></div>`;
+        const a = document.createElement('a');
+        a.href = p.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '리뷰 보기 →';
+        div.appendChild(a);
+        nearbyList.appendChild(div);
+      });
+      nearbyBox.classList.add('show');
+    }
+
+    async function runRecommendation(){
+      const btn = $('#recoBtn');
+      btn.disabled = true;
+      recoStatus.textContent = '📡 위치 확인 중…';
+      const coords = await getLocation();
+      recoStatus.textContent = coords ? '✅ 내 위치 확인 완료' : 'ℹ️ 위치 없이 추천합니다 (검색 링크는 동일하게 사용 가능)';
+
+      const picks = pickRecommendation();
+      renderReco(picks, coords);
+
+      if (coords && (localStorage.getItem(KAKAO_KEY) || '').trim()) {
+        recoStatus.textContent = '🔎 주변 음식점 검색 중…';
+        try {
+          const places = await fetchNearby(picks[0].menu, coords);
+          renderNearby(places);
+          recoStatus.textContent = places && places.length ? `✅ 반경 1km 내 음식점 ${places.length}곳` : 'ℹ️ 반경 1km 내 검색 결과가 없어요. 지도 링크로 확인해보세요.';
+        } catch (e) {
+          recoStatus.textContent = `⚠️ 주변 검색 실패: ${e.message} — 지도 링크는 사용 가능합니다.`;
+        }
+      }
+      btn.disabled = false;
+    }
+
+    $('#recoBtn').addEventListener('click', runRecommendation);
+    $('#rerollBtn').addEventListener('click', runRecommendation);
+    $('#ateBtn').addEventListener('click', () => {
+      if (!lastReco) return;
+      history.push({ menu: lastReco.menu, ts: Date.now() });
+      if (history.length > 30) history = history.slice(-30);
+      saveJSON(HIST_KEY, history);
+      renderHistory();
+      recoStatus.textContent = `🗓️ "${lastReco.menu}" 기록 완료! 앞으로 ${HIST_EXCLUDE_DAYS}일간 추천에서 제외돼요.`;
+    });
+    $('#toRouletteBtn').addEventListener('click', () => {
+      if (!lastReco) return;
+      items = [...lastReco.candidates];
+      syncUI();
+      switchView('roulette');
+    });
+
+    renderPrefs();
+    renderHistory();
+
+    // ===================== 룰렛 =====================
     const menuInput = $('#menuInput');
     const addBtn = $('#addBtn');
     const spinBtn = $('#spinBtn');
@@ -330,6 +710,10 @@
     // DOM 무결성
     (function(){ const n=items.length; const sliceCount=document.querySelectorAll('#slicesGroup path').length; console.assert(n===sliceCount, 'slices count matches items'); })();
     (function(){ const wg=document.getElementById('wheelGroup'); const lg=document.getElementById('labelsGroup'); const sg=document.getElementById('slicesGroup'); console.assert(lg.parentNode===wg && sg.parentNode===wg, 'labels & slices rotate together'); })();
+
+    // 추천 엔진 테스트
+    (function(){ const pool=buildPool(); console.assert(pool.length>0, 'pool not empty'); console.assert(pool.every(p=>p.weight>0), 'weights positive'); })();
+    (function(){ const picks=pickRecommendation(); console.assert(picks.length>=1 && picks.length<=3, '1~3 picks'); console.assert(new Set(picks.map(p=>p.menu)).size===picks.length, 'picks unique'); })();
   </script>
 </body>
 </html>
