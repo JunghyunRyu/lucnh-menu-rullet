@@ -13,13 +13,13 @@
   <!-- Open Graph / Twitter -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="점심메뉴 추천" />
-  <meta property="og:title" content="점심메뉴 추천 | 선호 유형 + 내 위치 기반" />
-  <meta property="og:description" content="좋아하는 음식 유형을 골라두면 내 위치(GPS) 기반으로 점심 메뉴를 추천해줍니다." />
+  <meta property="og:title" content="점심메뉴 추천 | 선호 유형 + 지역 기반" />
+  <meta property="og:description" content="좋아하는 음식 유형을 골라두면 점심 메뉴를 추천하고, 입력한 지역 기준으로 지도에서 맛집을 바로 찾아줍니다." />
   <meta property="og:image" content="./og_image.png" />
-  <meta property="og:url" content="https://github.dev/JunghyunRyu/lucnh-menu-rullet" >
+  <meta property="og:url" content="https://junghyunryu.github.io/lucnh-menu-rullet/" >
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="점심메뉴 추천 | 선호 유형 + 내 위치 기반" />
-  <meta name="twitter:description" content="선호 음식 유형 + 내 위치 기반 점심 메뉴 추천." />
+  <meta name="twitter:title" content="점심메뉴 추천 | 선호 유형 + 지역 기반" />
+  <meta name="twitter:description" content="선호 음식 유형 + 지역 기반 점심 메뉴 추천." />
   <meta name="twitter:image" content="./og_image.png" />
 
   <style>
@@ -64,7 +64,9 @@
     .row { display: flex; gap: 10px; }
     .row > * { flex: 1; }
 
-    input[type="text"], input[type="password"] { background: #0f141a; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-radius: 12px; padding: 12px 14px; font-size: 14px; outline: none; }
+    .field-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"] { width: 100%; background: #0f141a; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-radius: 12px; padding: 12px 14px; font-size: 14px; outline: none; }
+    input[type="text"]:focus { border-color: rgba(110,231,255,0.5); }
     input::placeholder { color: #718397; }
 
     button { background: linear-gradient(180deg, #2a3340 0%, #1a2230 100%); color: white; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 12px 16px; font-weight: 600; cursor: pointer; transition: transform .06s ease, box-shadow .2s ease, background .2s ease; }
@@ -79,12 +81,6 @@
     .chip { background: #0f141a; border: 1px solid rgba(255,255,255,0.12); color: var(--muted); border-radius: 999px; padding: 10px 14px; font-size: 14px; cursor: pointer; user-select: none; }
     .chip.on { background: linear-gradient(180deg, #3f9dff 0%, #2962ff 100%); color: #fff; border-color: transparent; }
 
-    details.opt { margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; }
-    details.opt summary { cursor: pointer; color: var(--muted); font-size: 13px; }
-    details.opt .inner { display: grid; gap: 10px; margin-top: 10px; }
-    details.opt .hint { color: var(--muted); font-size: 12px; line-height: 1.6; }
-    details.opt .hint a { color: var(--accent); }
-
     .status { color: var(--muted); font-size: 13px; min-height: 18px; }
     .reco-result { display: none; margin-top: 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; background: rgba(255,255,255,0.02); }
     .reco-result.show { display: block; }
@@ -97,14 +93,6 @@
     a.linkbtn { display: inline-block; background: linear-gradient(180deg, #2a3340 0%, #1a2230 100%); color: #fff; border: 1px solid rgba(255,255,255,0.08); font-weight: 600; }
     a.linkbtn.naver { background: linear-gradient(180deg, #06c167 0%, #03a557 100%); border-color: transparent; }
     a.linkbtn.kakao { background: linear-gradient(180deg, #ffe14a 0%, #f7d000 100%); color: #1a1a1a; border-color: transparent; }
-
-    .nearby { margin-top: 14px; display: none; }
-    .nearby.show { display: block; }
-    .nearby h4 { margin: 0 0 8px; font-size: 14px; }
-    .place { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; margin-bottom: 8px; background: #0f141a; }
-    .place .nm { font-size: 14px; font-weight: 600; }
-    .place .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
-    .place a { color: var(--accent); font-size: 13px; text-decoration: none; white-space: nowrap; }
 
     .history { margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; }
     .history .hd { display: flex; justify-content: space-between; align-items: center; }
@@ -125,29 +113,18 @@
         <div class="title">😋 좋아하는 음식 유형</div>
         <div class="sub">선택하면 자동 저장됩니다. 선호 유형에 추천 가중치가 붙고, 최근 3일 안에 먹은 메뉴는 추천에서 빠져요.</div>
         <div class="chips" id="prefChips"></div>
-
-        <details class="opt" id="kakaoOpt">
-          <summary>⚙️ 주변 음식점 실시간 검색 연동 (선택)</summary>
-          <div class="inner">
-            <div class="hint">
-              카카오 디벨로퍼스에서 발급한 <b>REST API 키</b>를 넣으면 추천 메뉴 기준으로
-              반경 1km 음식점을 거리순으로 보여줍니다. 키는 이 기기(localStorage)에만 저장됩니다.<br/>
-              키 발급: <a href="https://developers.kakao.com/" target="_blank" rel="noopener">developers.kakao.com</a>
-            </div>
-            <div class="row">
-              <input id="kakaoKey" type="password" placeholder="KakaoAK REST API 키 (선택)" autocomplete="off" />
-              <button id="kakaoSaveBtn" class="btn-ghost" style="flex:0 0 auto">저장</button>
-            </div>
-          </div>
-        </details>
       </section>
 
       <section class="card">
         <div class="title">📍 오늘 뭐 먹지?</div>
-        <div class="sub">내 위치를 확인하고, 선호 유형과 최근 기록을 반영해 메뉴를 추천합니다. 추천 메뉴는 네이버 지도에서 바로 주변 맛집 리뷰를 확인할 수 있어요.</div>
+        <div class="sub">선호 유형과 최근 기록을 반영해 메뉴를 추천합니다. 지역(동/역 이름)을 넣으면 그 동네 기준으로 지도에서 맛집을 바로 찾아줘요.</div>
 
         <div class="controls" style="margin-top:14px">
-          <button id="recoBtn" class="btn-accent" style="font-size:16px">✨ 내 위치 기반 추천 받기</button>
+          <div>
+            <div class="field-label">지역 / 동 (선택)</div>
+            <input id="regionInput" type="text" placeholder="예: 역삼동, 강남역, 판교" autocomplete="off" />
+          </div>
+          <button id="recoBtn" class="btn-accent" style="font-size:16px">✨ 점심 메뉴 추천 받기</button>
           <div class="status" id="recoStatus"></div>
         </div>
 
@@ -161,11 +138,6 @@
             <a id="kakaoLink" class="linkbtn kakao" target="_blank" rel="noopener">🗺️ 카카오맵에서 보기</a>
             <button id="rerollBtn" class="btn-ghost">🔁 다시 추천</button>
             <button id="ateBtn" class="btn-win">✅ 오늘 이거 먹음</button>
-          </div>
-
-          <div class="nearby" id="nearby">
-            <h4>🍽️ 주변 음식점 (가까운 순)</h4>
-            <div id="nearbyList"></div>
           </div>
         </div>
 
@@ -195,7 +167,7 @@
     };
     const PREF_KEY = 'lmr_prefs';
     const HIST_KEY = 'lmr_history';
-    const KAKAO_KEY = 'lmr_kakao_key';
+    const REGION_KEY = 'lmr_region';
     const HIST_EXCLUDE_DAYS = 3;
 
     const loadJSON = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; } };
@@ -204,7 +176,6 @@
     let prefs = loadJSON(PREF_KEY, []);
     let history = loadJSON(HIST_KEY, []);
     let lastReco = null;   // { menu, candidates, category }
-    let lastCoords = null; // { lat, lng }
 
     // --- 선호 유형 칩 ---
     const prefChips = $('#prefChips');
@@ -223,6 +194,13 @@
         prefChips.appendChild(chip);
       });
     }
+
+    // --- 지역 입력 (localStorage 저장) ---
+    const regionInput = $('#regionInput');
+    regionInput.value = localStorage.getItem(REGION_KEY) || '';
+    regionInput.addEventListener('input', () => {
+      localStorage.setItem(REGION_KEY, regionInput.value.trim());
+    });
 
     // --- 히스토리 ---
     const historyList = $('#historyList');
@@ -290,54 +268,25 @@
       return picks;
     }
 
-    // --- 위치 ---
-    function getLocation(){
-      return new Promise(resolve => {
-        if (!('geolocation' in navigator)) return resolve(null);
-        navigator.geolocation.getCurrentPosition(
-          pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-          () => resolve(null),
-          { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
-        );
-      });
-    }
-
-    // --- 카카오 로컬: 주변 음식점 (선택 기능) ---
-    const kakaoKeyInput = $('#kakaoKey');
-    kakaoKeyInput.value = localStorage.getItem(KAKAO_KEY) || '';
-    $('#kakaoSaveBtn').addEventListener('click', () => {
-      localStorage.setItem(KAKAO_KEY, kakaoKeyInput.value.trim());
-      recoStatus.textContent = kakaoKeyInput.value.trim() ? '카카오 키 저장 완료. 추천 시 주변 음식점을 함께 검색합니다.' : '카카오 키를 제거했습니다.';
-    });
-
-    async function fetchNearby(menu, coords){
-      const key = (localStorage.getItem(KAKAO_KEY) || '').trim();
-      if (!key || !coords) return null;
-      const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(menu)}&x=${coords.lng}&y=${coords.lat}&radius=1000&size=8&category_group_code=FD6`;
-      const res = await fetch(url, { headers: { Authorization: `KakaoAK ${key}` } });
-      if (!res.ok) throw new Error(`카카오 API 오류 (${res.status})`);
-      const data = await res.json();
-      return (data.documents || [])
-        .map(d => ({ name: d.place_name, dist: Number(d.distance), addr: d.road_address_name || d.address_name, cat: (d.category_name || '').split('>').pop().trim(), url: d.place_url }))
-        .sort((a, b) => a.dist - b.dist);
-    }
-
     // --- 결과 렌더 ---
     const recoStatus = $('#recoStatus');
     const recoResult = $('#recoResult');
-    const nearbyBox = $('#nearby');
-    const nearbyList = $('#nearbyList');
 
-    function renderReco(picks, coords){
+    function mapQuery(menu){
+      const region = (regionInput.value || '').trim();
+      return encodeURIComponent(`${region ? region + ' ' : ''}${menu} 맛집`);
+    }
+
+    function renderReco(picks){
       const top = picks[0];
       lastReco = { menu: top.menu, category: top.cat, candidates: picks.map(p => p.menu) };
-      lastCoords = coords;
 
       $('#recoMenu').textContent = top.menu;
+      const region = (regionInput.value || '').trim();
       const reasons = [];
       reasons.push(top.preferred ? `선호하는 ${top.cat} 유형` : `오늘은 색다르게 ${top.cat}`);
       reasons.push(`최근 ${HIST_EXCLUDE_DAYS}일 내 안 먹은 메뉴`);
-      reasons.push(coords ? '내 위치 기준 검색 링크 연결됨' : '위치 미사용 (권한 거부/실패)');
+      reasons.push(region ? `'${region}' 기준 지도 검색` : '지역 미입력 — 메뉴명으로 지도 검색');
       $('#recoWhy').textContent = reasons.join(' · ');
 
       const cands = $('#recoCands');
@@ -349,54 +298,20 @@
         cands.appendChild(el);
       });
 
-      const q = encodeURIComponent(`${top.menu} 맛집`);
+      const q = mapQuery(top.menu);
       $('#naverLink').href = `https://map.naver.com/p/search/${q}`;
       $('#kakaoLink').href = `https://map.kakao.com/?q=${q}`;
 
       recoResult.classList.add('show');
-      nearbyBox.classList.remove('show');
-      nearbyList.innerHTML = '';
     }
 
-    function renderNearby(places){
-      nearbyList.innerHTML = '';
-      if (!places || !places.length) {
-        nearbyBox.classList.remove('show');
-        return;
-      }
-      places.forEach(p => {
-        const div = document.createElement('div');
-        div.className = 'place';
-        div.innerHTML = `<div><div class="nm">${p.name}</div><div class="meta">${p.cat} · ${p.dist}m · ${p.addr}</div></div>`;
-        const a = document.createElement('a');
-        a.href = p.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '리뷰 보기 →';
-        div.appendChild(a);
-        nearbyList.appendChild(div);
-      });
-      nearbyBox.classList.add('show');
-    }
-
-    async function runRecommendation(){
-      const btn = $('#recoBtn');
-      btn.disabled = true;
-      recoStatus.textContent = '📡 위치 확인 중…';
-      const coords = await getLocation();
-      recoStatus.textContent = coords ? '✅ 내 위치 확인 완료' : 'ℹ️ 위치 없이 추천합니다 (검색 링크는 동일하게 사용 가능)';
-
+    function runRecommendation(){
       const picks = pickRecommendation();
-      renderReco(picks, coords);
-
-      if (coords && (localStorage.getItem(KAKAO_KEY) || '').trim()) {
-        recoStatus.textContent = '🔎 주변 음식점 검색 중…';
-        try {
-          const places = await fetchNearby(picks[0].menu, coords);
-          renderNearby(places);
-          recoStatus.textContent = places && places.length ? `✅ 반경 1km 내 음식점 ${places.length}곳` : 'ℹ️ 반경 1km 내 검색 결과가 없어요. 지도 링크로 확인해보세요.';
-        } catch (e) {
-          recoStatus.textContent = `⚠️ 주변 검색 실패: ${e.message} — 지도 링크는 사용 가능합니다.`;
-        }
-      }
-      btn.disabled = false;
+      renderReco(picks);
+      const region = (regionInput.value || '').trim();
+      recoStatus.textContent = region
+        ? `✅ '${region}' 기준으로 추천했어요. 지도 버튼으로 맛집을 확인하세요.`
+        : 'ℹ️ 지역을 입력하면 그 동네 맛집으로 검색됩니다.';
     }
 
     $('#recoBtn').addEventListener('click', runRecommendation);
@@ -426,6 +341,7 @@
     // ===== Tests =====
     (function(){ const pool=buildPool(); console.assert(pool.length>0, 'pool not empty'); console.assert(pool.every(p=>p.weight>0), 'weights positive'); })();
     (function(){ const picks=pickRecommendation(); console.assert(picks.length>=1 && picks.length<=3, '1~3 picks'); console.assert(new Set(picks.map(p=>p.menu)).size===picks.length, 'picks unique'); })();
+    (function(){ regionInput.value='역삼동'; console.assert(decodeURIComponent(mapQuery('보쌈'))==='역삼동 보쌈 맛집', 'region query'); regionInput.value=''; console.assert(decodeURIComponent(mapQuery('보쌈'))==='보쌈 맛집', 'no-region query'); regionInput.value=localStorage.getItem(REGION_KEY)||''; })();
   </script>
 </body>
 </html>

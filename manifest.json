@@ -1,7 +1,7 @@
 {
   "name": "점심메뉴 추천",
   "short_name": "점심추천",
-  "description": "선호 음식 유형과 내 위치(GPS) 기반 점심 메뉴 추천.",
+  "description": "선호 음식 유형 기반 점심 메뉴 추천. 지역을 넣으면 지도에서 맛집을 바로 찾아줍니다.",
   "lang": "ko",
   "dir": "ltr",
   "start_url": ".",
