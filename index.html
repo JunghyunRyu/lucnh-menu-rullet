@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>점심메뉴 룰렛</title>
+  <title>점심메뉴 추천</title>
   <!-- PWA: Manifest & Icons & Theme -->
   <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#0b0f13" />
@@ -12,18 +12,16 @@
 
   <!-- Open Graph / Twitter -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="점심메뉴 룰렛" />
-  <meta property="og:title" content="점심메뉴 룰렛 | 점심 메뉴 랜덤 추천" />
-  <meta property="og:description" content="GSAP으로 물리감 있게 도는 점심 메뉴 룰렛. 파이와 라벨이 함께 회전하고, 포인터에 맞춰 정확히 멈춥니다." />
+  <meta property="og:site_name" content="점심메뉴 추천" />
+  <meta property="og:title" content="점심메뉴 추천 | 선호 유형 + 내 위치 기반" />
+  <meta property="og:description" content="좋아하는 음식 유형을 골라두면 내 위치(GPS) 기반으로 점심 메뉴를 추천해줍니다." />
   <meta property="og:image" content="./og_image.png" />
   <meta property="og:url" content="https://github.dev/JunghyunRyu/lucnh-menu-rullet" >
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="점심메뉴 룰렛 | 점심 메뉴 랜덤 추천" />
-  <meta name="twitter:description" content="GSAP으로 물리감 있게 도는 점심 메뉴 룰렛." />
+  <meta name="twitter:title" content="점심메뉴 추천 | 선호 유형 + 내 위치 기반" />
+  <meta name="twitter:description" content="선호 음식 유형 + 내 위치 기반 점심 메뉴 추천." />
   <meta name="twitter:image" content="./og_image.png" />
 
-  <!-- GSAP CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <style>
     :root {
       --bg: #0b0f13;
@@ -43,13 +41,20 @@
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
       background: radial-gradient(1200px 800px at 70% -10%, #1b2430 0%, var(--bg) 60%);
       color: var(--text);
-      display: grid;
-      place-items: center;
       padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
     }
 
-    .app { width: min(1100px, 100%); display: grid; grid-template-columns: 420px 1fr; gap: 24px; }
-    @media (max-width: 900px) { .app { grid-template-columns: 1fr; } }
+    .topbar { width: min(1100px, 100%); display: flex; align-items: center; gap: 12px; }
+    .brand { font-weight: 800; font-size: 20px; letter-spacing: 0.2px; }
+
+    main { width: min(1100px, 100%); }
+
+    .reco-grid { display: grid; grid-template-columns: 420px 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 900px) { .reco-grid { grid-template-columns: 1fr; } }
 
     .card { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04); padding: 18px; }
     .title { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.2px; margin-bottom: 8px; font-size: 18px; }
@@ -59,7 +64,7 @@
     .row { display: flex; gap: 10px; }
     .row > * { flex: 1; }
 
-    input[type="text"], select { background: #0f141a; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-radius: 12px; padding: 12px 14px; font-size: 14px; outline: none; }
+    input[type="text"], input[type="password"] { background: #0f141a; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-radius: 12px; padding: 12px 14px; font-size: 14px; outline: none; }
     input::placeholder { color: #718397; }
 
     button { background: linear-gradient(180deg, #2a3340 0%, #1a2230 100%); color: white; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 12px 16px; font-weight: 600; cursor: pointer; transition: transform .06s ease, box-shadow .2s ease, background .2s ease; }
@@ -68,239 +73,346 @@
 
     .btn-accent { background: linear-gradient(180deg, #3f9dff 0%, #2962ff 100%); }
     .btn-ghost { background: transparent; border-color: rgba(255,255,255,0.14); }
+    .btn-win { background: linear-gradient(180deg, #2dd4bf 0%, #0d9488 100%); }
 
-    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-    .tag { display: inline-flex; align-items: center; gap: 8px; background: #0f141a; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 8px 10px; font-size: 13px; }
-    .tag button { padding: 6px 8px; border-radius: 999px; font-size: 12px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip { background: #0f141a; border: 1px solid rgba(255,255,255,0.12); color: var(--muted); border-radius: 999px; padding: 10px 14px; font-size: 14px; cursor: pointer; user-select: none; }
+    .chip.on { background: linear-gradient(180deg, #3f9dff 0%, #2962ff 100%); color: #fff; border-color: transparent; }
 
-    .stage { position: relative; display: grid; place-items: center; padding: 18px; min-height: 560px; }
-    /* 역삼각형(▼)이 위에서 원판을 가리키도록: border-top 사용 */
-    .pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--accent-2); filter: drop-shadow(0 4px 12px rgba(0,0,0,0.65)); }
+    details.opt { margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; }
+    details.opt summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+    details.opt .inner { display: grid; gap: 10px; margin-top: 10px; }
+    details.opt .hint { color: var(--muted); font-size: 12px; line-height: 1.6; }
+    details.opt .hint a { color: var(--accent); }
 
-    .wheel-wrap { position: relative; }
-    .wheel-shadow { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 28px 80px rgba(0,0,0,0.6), inset 0 0 0 10px rgba(255,255,255,0.03), inset 0 0 24px rgba(255,255,255,0.05); pointer-events: none; }
-    .wheel { width: min(520px, 85vw); height: min(520px, 85vw); display: block; }
+    .status { color: var(--muted); font-size: 13px; min-height: 18px; }
+    .reco-result { display: none; margin-top: 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; background: rgba(255,255,255,0.02); }
+    .reco-result.show { display: block; }
+    .reco-menu { font-size: 30px; font-weight: 800; color: var(--win); margin: 4px 0 6px; }
+    .reco-why { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .reco-cands { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .reco-cands .cand { background: #0f141a; border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; padding: 7px 12px; font-size: 13px; }
+    .reco-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .reco-actions button, .reco-actions a { flex: 1 1 auto; text-align: center; text-decoration: none; font-size: 13px; padding: 11px 12px; border-radius: 12px; }
+    a.linkbtn { display: inline-block; background: linear-gradient(180deg, #2a3340 0%, #1a2230 100%); color: #fff; border: 1px solid rgba(255,255,255,0.08); font-weight: 600; }
+    a.linkbtn.naver { background: linear-gradient(180deg, #06c167 0%, #03a557 100%); border-color: transparent; }
+    a.linkbtn.kakao { background: linear-gradient(180deg, #ffe14a 0%, #f7d000 100%); color: #1a1a1a; border-color: transparent; }
 
-    .center-cap { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
-    .cap { width: 110px; height: 110px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ffffff, #d9ecff 40%, #5a7cff 70%, #2331a5 100%); box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 4px rgba(255,255,255,0.6); border: 3px solid rgba(255,255,255,0.8); }
+    .nearby { margin-top: 14px; display: none; }
+    .nearby.show { display: block; }
+    .nearby h4 { margin: 0 0 8px; font-size: 14px; }
+    .place { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; margin-bottom: 8px; background: #0f141a; }
+    .place .nm { font-size: 14px; font-weight: 600; }
+    .place .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .place a { color: var(--accent); font-size: 13px; text-decoration: none; white-space: nowrap; }
 
-    .result { margin-top: 14px; text-align: center; font-size: 14px; color: var(--muted); }
-    .result b { color: var(--win); font-size: 18px; }
-    .footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .history { margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; }
+    .history .hd { display: flex; justify-content: space-between; align-items: center; }
+    .history .hd span { font-size: 13px; color: var(--muted); }
+    .history .hd button { padding: 6px 10px; font-size: 12px; border-radius: 999px; }
+    .history ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+    .history li { background: #0f141a; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: var(--muted); }
   </style>
 </head>
 <body>
-  <div class="app">
-    <section class="card">
-      <div class="title">🍱 점심 메뉴 설정</div>
-      <div class="sub">메뉴를 추가/삭제하고, 룰렛을 돌려 무작위로 선택하세요.</div>
+  <header class="topbar">
+    <div class="brand">🍱 점심메뉴 추천</div>
+  </header>
 
-      <div class="controls">
-        <div class="row">
-          <input id="menuInput" type="text" placeholder="예: 김밥, 비빔밥, 라멘" />
-          <button id="addBtn" class="btn-accent">추가</button>
-        </div>
-        <div class="tags" id="menuTags"></div>
-        <div class="row">
-          <select id="spinMode">
-            <option value="random" selected>무작위 멈춤</option>
-            <option value="choose">특정 메뉴로 멈춤</option>
-          </select>
-          <select id="chooseTarget" disabled></select>
-        </div>
-        <div class="row">
-          <button id="shuffleBtn" class="btn-ghost">색상 섞기</button>
-          <button id="spinBtn" class="btn-accent" style="font-size:16px">🎯 룰렛 돌리기</button>
-        </div>
-        <div class="result" id="result">결과가 여기에 표시됩니다.</div>
-        <div class="footer">원판(파이)+라벨 함께 회전 · 효과링은 정지</div>
-      </div>
-    </section>
+  <main>
+    <div class="reco-grid">
+      <section class="card">
+        <div class="title">😋 좋아하는 음식 유형</div>
+        <div class="sub">선택하면 자동 저장됩니다. 선호 유형에 추천 가중치가 붙고, 최근 3일 안에 먹은 메뉴는 추천에서 빠져요.</div>
+        <div class="chips" id="prefChips"></div>
 
-    <section class="card stage">
-      <div class="pointer" aria-hidden="true"></div>
-      <div class="wheel-wrap">
-        <svg id="wheel" class="wheel" viewBox="-260 -260 520 520" aria-label="메뉴 룰렛"></svg>
-        <div class="wheel-shadow"></div>
-        <div class="center-cap"><div class="cap" id="cap"></div></div>
-      </div>
-    </section>
-  </div>
+        <details class="opt" id="kakaoOpt">
+          <summary>⚙️ 주변 음식점 실시간 검색 연동 (선택)</summary>
+          <div class="inner">
+            <div class="hint">
+              카카오 디벨로퍼스에서 발급한 <b>REST API 키</b>를 넣으면 추천 메뉴 기준으로
+              반경 1km 음식점을 거리순으로 보여줍니다. 키는 이 기기(localStorage)에만 저장됩니다.<br/>
+              키 발급: <a href="https://developers.kakao.com/" target="_blank" rel="noopener">developers.kakao.com</a>
+            </div>
+            <div class="row">
+              <input id="kakaoKey" type="password" placeholder="KakaoAK REST API 키 (선택)" autocomplete="off" />
+              <button id="kakaoSaveBtn" class="btn-ghost" style="flex:0 0 auto">저장</button>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="card">
+        <div class="title">📍 오늘 뭐 먹지?</div>
+        <div class="sub">내 위치를 확인하고, 선호 유형과 최근 기록을 반영해 메뉴를 추천합니다. 추천 메뉴는 네이버 지도에서 바로 주변 맛집 리뷰를 확인할 수 있어요.</div>
+
+        <div class="controls" style="margin-top:14px">
+          <button id="recoBtn" class="btn-accent" style="font-size:16px">✨ 내 위치 기반 추천 받기</button>
+          <div class="status" id="recoStatus"></div>
+        </div>
+
+        <div class="reco-result" id="recoResult">
+          <div class="sub">오늘의 추천</div>
+          <div class="reco-menu" id="recoMenu"></div>
+          <div class="reco-why" id="recoWhy"></div>
+          <div class="reco-cands" id="recoCands"></div>
+          <div class="reco-actions">
+            <a id="naverLink" class="linkbtn naver" target="_blank" rel="noopener">🟢 네이버 지도 리뷰 보기</a>
+            <a id="kakaoLink" class="linkbtn kakao" target="_blank" rel="noopener">🗺️ 카카오맵에서 보기</a>
+            <button id="rerollBtn" class="btn-ghost">🔁 다시 추천</button>
+            <button id="ateBtn" class="btn-win">✅ 오늘 이거 먹음</button>
+          </div>
+
+          <div class="nearby" id="nearby">
+            <h4>🍽️ 주변 음식점 (가까운 순)</h4>
+            <div id="nearbyList"></div>
+          </div>
+        </div>
+
+        <div class="history" id="historyBox">
+          <div class="hd">
+            <span>🗓️ 최근 먹은 메뉴 (추천에서 자동 제외)</span>
+            <button id="clearHistoryBtn" class="btn-ghost">기록 지우기</button>
+          </div>
+          <ul id="historyList"></ul>
+        </div>
+      </section>
+    </div>
+  </main>
 
   <script>
     const $ = (sel) => document.querySelector(sel);
-    const menuInput = $('#menuInput');
-    const addBtn = $('#addBtn');
-    const spinBtn = $('#spinBtn');
-    const shuffleBtn = $('#shuffleBtn');
-    const tags = $('#menuTags');
-    const wheel = $('#wheel');
-    const resultEl = $('#result');
-    const spinModeSel = $('#spinMode');
-    const chooseTargetSel = $('#chooseTarget');
 
-    const R = 240;
-    const TEXT_R = R * 0.62;
+    const CATEGORIES = {
+      '한식':   ['김치찌개','된장찌개','순두부찌개','비빔밥','제육볶음','불고기','국밥','갈비탕','냉면','보쌈','칼국수','부대찌개'],
+      '중식':   ['짜장면','짬뽕','탕수육','마라탕','마라샹궈','중화비빔밥','볶음밥'],
+      '일식':   ['초밥','라멘','돈까스','우동','규동','소바','일본식 카레'],
+      '양식':   ['파스타','피자','스테이크','리조또','샌드위치','오므라이스'],
+      '분식':   ['떡볶이','김밥','라면','순대','만두','쫄면','우동'],
+      '아시안': ['쌀국수','팟타이','분짜','나시고렝','카오팟','쌀국수 볶음'],
+      '패스트푸드': ['햄버거','치킨','핫도그','타코'],
+      '샐러드/건강식': ['샐러드','포케','닭가슴살 도시락','샐러드 파스타','그릭요거트 볼']
+    };
+    const PREF_KEY = 'lmr_prefs';
+    const HIST_KEY = 'lmr_history';
+    const KAKAO_KEY = 'lmr_kakao_key';
+    const HIST_EXCLUDE_DAYS = 3;
 
-    const basePalette = ['#4f46e5','#06b6d4','#22c55e','#f59e0b','#ef4444','#a855f7','#10b981','#f97316','#eab308','#3b82f6','#ec4899','#14b8a6'];
-    let palette = [...basePalette];
+    const loadJSON = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; } };
+    const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
-    let items = ['김밥','비빔밥','라멘','돈까스','샐러드','김치찌개'];
-    let spinning = false;
+    let prefs = loadJSON(PREF_KEY, []);
+    let history = loadJSON(HIST_KEY, []);
+    let lastReco = null;   // { menu, candidates, category }
+    let lastCoords = null; // { lat, lng }
 
-    const deg2rad = (d) => (d * Math.PI) / 180;
-    const polar = (r, deg) => [ r * Math.cos(deg2rad(deg)), r * Math.sin(deg2rad(deg)) ];
-
-    function describeSlice(startDeg, endDeg) {
-      const [x0, y0] = [0, 0];
-      const [x1, y1] = polar(R, startDeg);
-      const [x2, y2] = polar(R, endDeg);
-      const largeArc = endDeg - startDeg <= 180 ? 0 : 1;
-      return `M ${x0} ${y0} L ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-    }
-    const midAngle = (start, end) => (start + end) / 2;
-    function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
-
-    function renderWheel(){
-      wheel.innerHTML = '';
-      const n = items.length; if (!n) return;
-      const sliceAngle = 360 / n;
-
-      // ===== master group: rotate slices + labels together =====
-      const wheelG = document.createElementNS('http://www.w3.org/2000/svg','g');
-      wheelG.setAttribute('id','wheelGroup');
-      wheel.appendChild(wheelG);
-      gsap.set(wheelG, { svgOrigin: '0 0' });
-
-      // Slices (part of wheelGroup)
-      const slicesG = document.createElementNS('http://www.w3.org/2000/svg','g');
-      slicesG.setAttribute('id','slicesGroup');
-      wheelG.appendChild(slicesG);
-
-      // Labels (part of wheelGroup)
-      const labelsG = document.createElementNS('http://www.w3.org/2000/svg','g');
-      labelsG.setAttribute('id','labelsGroup');
-      wheelG.appendChild(labelsG);
-
-      // Static FX ring (visual, non-rotating)
-      const fxG = document.createElementNS('http://www.w3.org/2000/svg','g');
-      fxG.setAttribute('id','fxRing');
-      wheel.appendChild(fxG);
-
-      // Draw slices + labels
-      items.forEach((label, i) => {
-        const start = i * sliceAngle - 90;
-        const end = start + sliceAngle;
-        const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-        path.setAttribute('d', describeSlice(start, end));
-        path.setAttribute('fill', palette[i % palette.length]);
-        path.setAttribute('stroke', 'rgba(0,0,0,0.35)');
-        path.setAttribute('stroke-width', '1');
-        path.setAttribute('data-index', i);
-        slicesG.appendChild(path);
-
-        const m = midAngle(start, end);
-        const text = document.createElementNS('http://www.w3.org/2000/svg','text');
-        text.classList.add('wheel-label');
-        text.textContent = label;
-        text.setAttribute('text-anchor','middle');
-        text.setAttribute('dominant-baseline','middle');
-        text.setAttribute('fill','#0b0f13');
-        text.setAttribute('font-size', n>10 ? '12' : '14');
-        text.setAttribute('font-weight','700');
-        // Labels rotate WITH the wheel → no counter-rotation
-        text.setAttribute('transform', `rotate(${m}) translate(${TEXT_R},0)`);
-        labelsG.appendChild(text);
+    // --- 선호 유형 칩 ---
+    const prefChips = $('#prefChips');
+    function renderPrefs(){
+      prefChips.innerHTML = '';
+      Object.keys(CATEGORIES).forEach(cat => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip' + (prefs.includes(cat) ? ' on' : '');
+        chip.textContent = cat;
+        chip.addEventListener('click', () => {
+          prefs = prefs.includes(cat) ? prefs.filter(c => c !== cat) : [...prefs, cat];
+          saveJSON(PREF_KEY, prefs);
+          renderPrefs();
+        });
+        prefChips.appendChild(chip);
       });
+    }
 
-      // Build static FX ring (alternating wedges near rim)
-      const stripes = 36; const stripeAngle = 360 / stripes;
-      for (let i=0;i<stripes;i++){
-        const a0 = i * stripeAngle - 90, a1 = a0 + stripeAngle;
-        const innerR = R*0.88, outerR = R*0.98;
-        const [x1,y1] = polar(innerR,a0); const [x2,y2] = polar(outerR,a0);
-        const [x3,y3] = polar(outerR,a1); const [x4,y4] = polar(innerR,a1);
-        const p = document.createElementNS('http://www.w3.org/2000/svg','path');
-        p.setAttribute('d', `M ${x1} ${y1} L ${x2} ${y2} A ${outerR} ${outerR} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${innerR} ${innerR} 0 0 0 ${x1} ${y1} Z`);
-        p.setAttribute('fill', i%2===0 ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)');
-        fxG.appendChild(p);
+    // --- 히스토리 ---
+    const historyList = $('#historyList');
+    function recentMenus(days){
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      return history.filter(h => h.ts >= cutoff).map(h => h.menu);
+    }
+    function renderHistory(){
+      historyList.innerHTML = '';
+      const recent = history.slice(-10).reverse();
+      if (!recent.length) {
+        const li = document.createElement('li'); li.textContent = '아직 기록이 없어요';
+        historyList.appendChild(li); return;
       }
-    }
-
-    function renderTags(){
-      tags.innerHTML = '';
-      items.forEach((name, idx) => {
-        const el = document.createElement('span'); el.className='tag'; el.innerHTML = `<span>${name}</span>`;
-        const del=document.createElement('button'); del.textContent='삭제';
-        del.addEventListener('click', ()=>{ items.splice(idx,1); syncUI(); });
-        el.appendChild(del); tags.appendChild(el);
-      });
-      chooseTargetSel.innerHTML='';
-      items.forEach((name, i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=name; chooseTargetSel.appendChild(opt); });
-    }
-    function syncUI(){ renderTags(); renderWheel(); }
-
-    // ===== Spinning: rotate the WHOLE wheelGroup (slices + labels) =====
-    function spinToIndex(targetIndex){
-      const n = items.length; if (n===0) return;
-      const slice = 360 / n;
-      const targetStart = targetIndex * slice - 90;
-      const targetMid = targetStart + slice/2;
-      const extraTurns = 5 + Math.floor(Math.random()*3);
-
-      const wheelGroup = document.getElementById('wheelGroup');
-      // 현재 회전각(누적)을 고려해 추가 회전각(delta) 계산
-      const currentAbs = Number(gsap.getProperty(wheelGroup, 'rotation')) || 0; // e.g. 1080, -30, etc.
-      const currentNorm = ((currentAbs % 360) + 360) % 360; // 0~359
-      // (targetMid + currentNorm + delta) % 360 == 0  → delta = k*360 - (targetMid + currentNorm)
-      // Align target mid to pointer at -90° (== 270° mod 360)
-      const delta = extraTurns*360 + 270 - ((targetMid + currentNorm) % 360);
-      const finalAbs = currentAbs + delta; // 절대 목표 각도
-
-      spinning = true;
-      [spinBtn, addBtn, shuffleBtn, spinModeSel].forEach(b=>b.disabled=true);
-      chooseTargetSel.disabled = spinModeSel.value !== 'choose';
-
-      gsap.set(wheelGroup, { svgOrigin: '0 0' });
-      gsap.to(wheelGroup, {
-        rotation: finalAbs,
-        duration: 5.5,
-        ease: 'power4.out',
-        onComplete: () => {
-          spinning = false;
-          [spinBtn, addBtn, shuffleBtn, spinModeSel].forEach(b=>b.disabled=false);
-          const winner = items[targetIndex];
-          resultEl.innerHTML = `결과: <b>${winner}</b>`;
-          highlightWinner(targetIndex);
-        }
+      recent.forEach(h => {
+        const li = document.createElement('li');
+        const d = new Date(h.ts);
+        li.textContent = `${h.menu} · ${d.getMonth()+1}/${d.getDate()}`;
+        historyList.appendChild(li);
       });
     }
-
-    function highlightWinner(index){
-      const slice = document.querySelector(`#slicesGroup path[data-index="${index}"]`);
-      if (!slice) return;
-      gsap.to(slice, { duration: 0.2, attr: { 'stroke-width': 3, stroke: 'rgba(255,255,255,0.9)' } });
-      gsap.to(slice, { duration: 0.8, yoyo: true, repeat: 1, ease: 'power1.out', attr: { 'stroke-width': 1, stroke: 'rgba(0,0,0,0.35)' } });
-    }
-
-    function handleSpin(){
-      if (spinning || items.length===0) return;
-      const targetIndex = (spinModeSel.value==='choose') ? Number(chooseTargetSel.value||0) : Math.floor(Math.random()*items.length);
-      spinToIndex(targetIndex);
-    }
-
-    addBtn.addEventListener('click', ()=>{
-      const raw = menuInput.value.trim(); if(!raw) return;
-      const parts = raw.split(',').map(s=>s.trim()).filter(Boolean);
-      items.push(...parts); menuInput.value=''; syncUI();
+    $('#clearHistoryBtn').addEventListener('click', () => {
+      history = []; saveJSON(HIST_KEY, history); renderHistory();
     });
-    menuInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') addBtn.click(); });
-    shuffleBtn.addEventListener('click', ()=>{ palette = shuffle(palette); renderWheel(); });
-    spinBtn.addEventListener('click', handleSpin);
-    spinModeSel.addEventListener('change', ()=>{ chooseTargetSel.disabled = spinModeSel.value !== 'choose'; });
+
+    // --- 추천 엔진: 선호 가중치 + 최근 기록 제외 ---
+    function buildPool(){
+      const excluded = new Set(recentMenus(HIST_EXCLUDE_DAYS));
+      const pool = [];
+      Object.entries(CATEGORIES).forEach(([cat, menus]) => {
+        const preferred = prefs.includes(cat);
+        const weight = prefs.length ? (preferred ? 5 : 1) : 2;
+        menus.forEach(menu => {
+          if (excluded.has(menu)) return;
+          pool.push({ menu, cat, weight, preferred });
+        });
+      });
+      return pool;
+    }
+    function weightedPick(pool){
+      const total = pool.reduce((s, p) => s + p.weight, 0);
+      let r = Math.random() * total;
+      for (const p of pool) { r -= p.weight; if (r <= 0) return p; }
+      return pool[pool.length - 1];
+    }
+    function pickRecommendation(){
+      let pool = buildPool();
+      if (!pool.length) {
+        // 전부 최근에 먹었으면 제외 없이 다시
+        pool = [];
+        Object.entries(CATEGORIES).forEach(([cat, menus]) => {
+          const preferred = prefs.includes(cat);
+          const weight = prefs.length ? (preferred ? 5 : 1) : 2;
+          menus.forEach(menu => pool.push({ menu, cat, weight, preferred }));
+        });
+      }
+      const picks = [];
+      const seen = new Set();
+      let guard = 0;
+      while (picks.length < Math.min(3, pool.length) && guard++ < 200) {
+        const p = weightedPick(pool);
+        if (seen.has(p.menu)) continue;
+        seen.add(p.menu); picks.push(p);
+      }
+      return picks;
+    }
+
+    // --- 위치 ---
+    function getLocation(){
+      return new Promise(resolve => {
+        if (!('geolocation' in navigator)) return resolve(null);
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => resolve(null),
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+        );
+      });
+    }
+
+    // --- 카카오 로컬: 주변 음식점 (선택 기능) ---
+    const kakaoKeyInput = $('#kakaoKey');
+    kakaoKeyInput.value = localStorage.getItem(KAKAO_KEY) || '';
+    $('#kakaoSaveBtn').addEventListener('click', () => {
+      localStorage.setItem(KAKAO_KEY, kakaoKeyInput.value.trim());
+      recoStatus.textContent = kakaoKeyInput.value.trim() ? '카카오 키 저장 완료. 추천 시 주변 음식점을 함께 검색합니다.' : '카카오 키를 제거했습니다.';
+    });
+
+    async function fetchNearby(menu, coords){
+      const key = (localStorage.getItem(KAKAO_KEY) || '').trim();
+      if (!key || !coords) return null;
+      const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(menu)}&x=${coords.lng}&y=${coords.lat}&radius=1000&size=8&category_group_code=FD6`;
+      const res = await fetch(url, { headers: { Authorization: `KakaoAK ${key}` } });
+      if (!res.ok) throw new Error(`카카오 API 오류 (${res.status})`);
+      const data = await res.json();
+      return (data.documents || [])
+        .map(d => ({ name: d.place_name, dist: Number(d.distance), addr: d.road_address_name || d.address_name, cat: (d.category_name || '').split('>').pop().trim(), url: d.place_url }))
+        .sort((a, b) => a.dist - b.dist);
+    }
+
+    // --- 결과 렌더 ---
+    const recoStatus = $('#recoStatus');
+    const recoResult = $('#recoResult');
+    const nearbyBox = $('#nearby');
+    const nearbyList = $('#nearbyList');
+
+    function renderReco(picks, coords){
+      const top = picks[0];
+      lastReco = { menu: top.menu, category: top.cat, candidates: picks.map(p => p.menu) };
+      lastCoords = coords;
+
+      $('#recoMenu').textContent = top.menu;
+      const reasons = [];
+      reasons.push(top.preferred ? `선호하는 ${top.cat} 유형` : `오늘은 색다르게 ${top.cat}`);
+      reasons.push(`최근 ${HIST_EXCLUDE_DAYS}일 내 안 먹은 메뉴`);
+      reasons.push(coords ? '내 위치 기준 검색 링크 연결됨' : '위치 미사용 (권한 거부/실패)');
+      $('#recoWhy').textContent = reasons.join(' · ');
+
+      const cands = $('#recoCands');
+      cands.innerHTML = '';
+      picks.slice(1).forEach(p => {
+        const el = document.createElement('span');
+        el.className = 'cand';
+        el.textContent = `차선책: ${p.menu} (${p.cat})`;
+        cands.appendChild(el);
+      });
+
+      const q = encodeURIComponent(`${top.menu} 맛집`);
+      $('#naverLink').href = `https://map.naver.com/p/search/${q}`;
+      $('#kakaoLink').href = `https://map.kakao.com/?q=${q}`;
+
+      recoResult.classList.add('show');
+      nearbyBox.classList.remove('show');
+      nearbyList.innerHTML = '';
+    }
+
+    function renderNearby(places){
+      nearbyList.innerHTML = '';
+      if (!places || !places.length) {
+        nearbyBox.classList.remove('show');
+        return;
+      }
+      places.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'place';
+        div.innerHTML = `<div><div class="nm">${p.name}</div><div class="meta">${p.cat} · ${p.dist}m · ${p.addr}</div></div>`;
+        const a = document.createElement('a');
+        a.href = p.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '리뷰 보기 →';
+        div.appendChild(a);
+        nearbyList.appendChild(div);
+      });
+      nearbyBox.classList.add('show');
+    }
+
+    async function runRecommendation(){
+      const btn = $('#recoBtn');
+      btn.disabled = true;
+      recoStatus.textContent = '📡 위치 확인 중…';
+      const coords = await getLocation();
+      recoStatus.textContent = coords ? '✅ 내 위치 확인 완료' : 'ℹ️ 위치 없이 추천합니다 (검색 링크는 동일하게 사용 가능)';
+
+      const picks = pickRecommendation();
+      renderReco(picks, coords);
+
+      if (coords && (localStorage.getItem(KAKAO_KEY) || '').trim()) {
+        recoStatus.textContent = '🔎 주변 음식점 검색 중…';
+        try {
+          const places = await fetchNearby(picks[0].menu, coords);
+          renderNearby(places);
+          recoStatus.textContent = places && places.length ? `✅ 반경 1km 내 음식점 ${places.length}곳` : 'ℹ️ 반경 1km 내 검색 결과가 없어요. 지도 링크로 확인해보세요.';
+        } catch (e) {
+          recoStatus.textContent = `⚠️ 주변 검색 실패: ${e.message} — 지도 링크는 사용 가능합니다.`;
+        }
+      }
+      btn.disabled = false;
+    }
+
+    $('#recoBtn').addEventListener('click', runRecommendation);
+    $('#rerollBtn').addEventListener('click', runRecommendation);
+    $('#ateBtn').addEventListener('click', () => {
+      if (!lastReco) return;
+      history.push({ menu: lastReco.menu, ts: Date.now() });
+      if (history.length > 30) history = history.slice(-30);
+      saveJSON(HIST_KEY, history);
+      renderHistory();
+      recoStatus.textContent = `🗓️ "${lastReco.menu}" 기록 완료! 앞으로 ${HIST_EXCLUDE_DAYS}일간 추천에서 제외돼요.`;
+    });
 
     // ===== Init =====
-    syncUI();
+    renderPrefs();
+    renderHistory();
 
     // ===== PWA: register Service Worker =====
     if ('serviceWorker' in navigator) {
@@ -312,24 +424,8 @@
     }
 
     // ===== Tests =====
-    console.assert(typeof spinToIndex==='function', 'spinToIndex exposed');
-
-    // 수학 함수: 현재 각, 아이템 수, 목표 인덱스, 추가회전수 → delta
-    function __computeDeltaRotation(currentAbs, n, idx, extra){
-      const slice=360/n; const targetStart=idx*slice-90; const targetMid=targetStart+slice/2;
-      const currentNorm=((currentAbs%360)+360)%360; return extra*360 + 270 - ((targetMid + currentNorm)%360);
-    }
-
-    // 기존 정적 케이스(현재각 0)
-    (function(){ const n=4, idx=1; const delta=__computeDeltaRotation(0,n,idx,6); const slice=360/n; const mid=(idx*slice-90)+slice/2; console.assert(Math.abs(((mid+0+delta)%360) - 270) < 1e-6, 'align @270°(-90°), even n'); })();
-    (function(){ const n=5, idx=3; const delta=__computeDeltaRotation(0,n,idx,6); const slice=360/n; const mid=(idx*slice-90)+slice/2; console.assert(Math.abs(((mid+0+delta)%360) - 270) < 1e-6, 'align @270°(-90°), odd n'); })();
-
-    // 누적 회전이 있을 때도 정렬되는지 검사
-    (function(){ const current=137; const n=6, idx=4; const delta=__computeDeltaRotation(current,n,idx,5); const slice=360/n; const mid=(idx*slice-90)+slice/2; const sum=(mid+((current%360)+360)%360+delta)%360; console.assert(Math.abs(sum - 270) < 1e-6, 'align with non-zero current to 270°(-90°)'); })();
-
-    // DOM 무결성
-    (function(){ const n=items.length; const sliceCount=document.querySelectorAll('#slicesGroup path').length; console.assert(n===sliceCount, 'slices count matches items'); })();
-    (function(){ const wg=document.getElementById('wheelGroup'); const lg=document.getElementById('labelsGroup'); const sg=document.getElementById('slicesGroup'); console.assert(lg.parentNode===wg && sg.parentNode===wg, 'labels & slices rotate together'); })();
+    (function(){ const pool=buildPool(); console.assert(pool.length>0, 'pool not empty'); console.assert(pool.every(p=>p.weight>0), 'weights positive'); })();
+    (function(){ const picks=pickRecommendation(); console.assert(picks.length>=1 && picks.length<=3, '1~3 picks'); console.assert(new Set(picks.map(p=>p.menu)).size===picks.length, 'picks unique'); })();
   </script>
 </body>
 </html>
