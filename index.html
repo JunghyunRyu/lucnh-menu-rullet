@@ -200,7 +200,6 @@
       '🥗 가벼운': ['샐러드','포케','김밥','소바','닭가슴살 도시락','그릭요거트 볼','샌드위치','초밥','냉면','샐러드 파스타'],
       '🍲 해장':  ['국밥','갈비탕','칼국수','짬뽕','라면','순두부찌개','김치찌개']
     };
-    const TAG_BOOST = 4; // 날씨/기분에 맞는 메뉴 가중치 배수
 
     const PREF_KEY = 'lmr_prefs';
     const HIST_KEY = 'lmr_history';
@@ -322,11 +321,18 @@
       history = []; saveJSON(HIST_KEY, history); renderHistory();
     });
 
-    // --- 추천 엔진: 선호 + 날씨/기분 가중치 + 최근 기록 제외 ---
+    // --- 추천 엔진: 선호 가중치 + 날씨/기분 필터 + 최근 기록 제외 ---
     // 같은 음식이 여러 유형에 속하면(예: 우동=일식/분식) 하나로 합친다.
     // 선호 유형에 속한 쪽을 우선해서 라벨/가중치를 고정 → 유형과 음식이 항상 일치.
     const fitsWeather = (menu) => !!weatherSel && (WEATHER_MENUS[weatherSel] || []).includes(menu);
     const fitsMood = (menu) => !!moodSel && (MOOD_MENUS[moodSel] || []).includes(menu);
+    // '보통'처럼 후보 목록이 빈 태그는 "제약 없음"으로 취급
+    const weatherActive = () => !!weatherSel && (WEATHER_MENUS[weatherSel] || []).length > 0;
+    const moodActive = () => !!moodSel && (MOOD_MENUS[moodSel] || []).length > 0;
+    const qualifies = (menu) =>
+      (!weatherActive() || WEATHER_MENUS[weatherSel].includes(menu)) &&
+      (!moodActive() || MOOD_MENUS[moodSel].includes(menu));
+
     function dedupedMenus(){
       const byMenu = new Map();
       Object.entries(CATEGORIES).forEach(([cat, menus]) => {
@@ -338,16 +344,27 @@
           }
         });
       });
-      return [...byMenu.values()].map(m => {
-        let weight = prefs.length ? (m.preferred ? 5 : 1) : 2;
-        if (fitsWeather(m.menu)) weight *= TAG_BOOST;
-        if (fitsMood(m.menu)) weight *= TAG_BOOST;
-        return { ...m, weight };
-      });
+      return [...byMenu.values()].map(m => ({
+        ...m, weight: prefs.length ? (m.preferred ? 5 : 1) : 2
+      }));
+    }
+
+    // 날씨/기분을 '필터'로 적용. 교집합이 비면 합집합으로, 그래도 없으면 전체로 완화.
+    function taggedMenus(list){
+      if (!weatherActive() && !moodActive()) return list;
+      const inter = list.filter(m => qualifies(m.menu));
+      if (inter.length) return inter;
+      if (weatherActive() && moodActive()){
+        const uni = list.filter(m => WEATHER_MENUS[weatherSel].includes(m.menu) || MOOD_MENUS[moodSel].includes(m.menu));
+        if (uni.length) return uni;
+      }
+      return list;
     }
     function buildPool(){
       const excluded = new Set(recentMenus(HIST_EXCLUDE_DAYS));
-      return dedupedMenus().filter(m => !excluded.has(m.menu));
+      const tagged = taggedMenus(dedupedMenus());
+      const fresh = tagged.filter(m => !excluded.has(m.menu));
+      return fresh.length ? fresh : tagged; // 태그는 지키되, 다 먹었으면 최근 제외만 해제
     }
     function weightedPick(pool){
       const total = pool.reduce((s, p) => s + p.weight, 0);
@@ -357,7 +374,7 @@
     }
     function pickRecommendation(){
       let pool = buildPool();
-      if (!pool.length) pool = dedupedMenus(); // 전부 최근에 먹었으면 제외 없이 다시
+      if (!pool.length) pool = dedupedMenus(); // 안전망
       const picks = [];
       const seen = new Set();
       let guard = 0;
@@ -443,7 +460,7 @@
     (function(){ const picks=pickRecommendation(); console.assert(picks.length>=1 && picks.length<=3, '1~3 picks'); console.assert(new Set(picks.map(p=>p.menu)).size===picks.length, 'picks unique'); })();
     (function(){ const names=dedupedMenus().map(m=>m.menu); console.assert(new Set(names).size===names.length, 'menus deduped (no 우동 등 중복)'); dedupedMenus().forEach(m=>{ console.assert((CATEGORIES[m.cat]||[]).includes(m.menu), `유형-음식 일치: ${m.menu} in ${m.cat}`); }); })();
     (function(){ const r=regionInput.value, mi=menuInput.value; regionInput.value='역삼동'; console.assert(decodeURIComponent(mapQuery('보쌈'))==='역삼동 보쌈 맛집', 'region+menu query'); regionInput.value=''; console.assert(decodeURIComponent(mapQuery('보쌈'))==='보쌈 맛집', 'menu-only query'); console.assert(decodeURIComponent(mapQuery(''))==='맛집', 'empty query'); regionInput.value='판교'; console.assert(decodeURIComponent(mapQuery(''))==='판교 맛집', 'region-only query'); regionInput.value=r; menuInput.value=mi; })();
-    (function(){ const w=weatherSel, m=moodSel; weatherSel='❄️ 추움'; moodSel=null; const jji=dedupedMenus().find(x=>x.menu==='김치찌개'), pa=dedupedMenus().find(x=>x.menu==='파스타'); console.assert(jji.weight>pa.weight, '추운 날 국물 메뉴 가중치 ↑'); moodSel='🥗 가벼운'; const sal=dedupedMenus().find(x=>x.menu==='샐러드'); console.assert(sal.weight>=TAG_BOOST, '가벼운 기분 메뉴 부스트'); weatherSel=w; moodSel=m; })();
+    (function(){ const w=weatherSel, m=moodSel; weatherSel=null; moodSel='🔥 얼큰한'; const names=buildPool().map(x=>x.menu); console.assert(names.includes('짬뽕') && !names.includes('만두'), '얼큰한 선택 → 얼큰한 메뉴만 (만두 제외)'); console.assert(names.every(n=>MOOD_MENUS['🔥 얼큰한'].includes(n)), '얼큰한 풀은 전부 얼큰한 메뉴'); weatherSel='😐 보통'; moodSel=null; console.assert(buildPool().length===dedupedMenus().filter(x=>!new Set(recentMenus(HIST_EXCLUDE_DAYS)).has(x.menu)).length, '보통 날씨는 제약 없음'); weatherSel=w; moodSel=m; })();
     (function(){ Object.values(WEATHER_MENUS).flat().concat(Object.values(MOOD_MENUS).flat()).forEach(menu=>{ console.assert(Object.values(CATEGORIES).flat().includes(menu), `태그 메뉴가 실제 존재: ${menu}`); }); })();
   </script>
 </body>
