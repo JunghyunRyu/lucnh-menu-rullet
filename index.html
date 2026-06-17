@@ -117,13 +117,23 @@
 
       <section class="card">
         <div class="title">📍 오늘 뭐 먹지?</div>
-        <div class="sub">선호 유형과 최근 기록을 반영해 메뉴를 추천합니다. 지역(동/역 이름)을 넣으면 그 동네 기준으로 지도에서 맛집을 바로 찾아줘요.</div>
+        <div class="sub">선호 유형과 최근 기록을 반영해 메뉴를 추천합니다. 지역(동/역 이름)과 메뉴를 넣으면 지도에서 바로 맛집을 찾아줘요.</div>
 
         <div class="controls" style="margin-top:14px">
           <div>
             <div class="field-label">지역 / 동 (선택)</div>
             <input id="regionInput" type="text" placeholder="예: 역삼동, 강남역, 판교" autocomplete="off" />
           </div>
+
+          <div>
+            <div class="field-label">메뉴 직접 검색 (선택) — 지역과 함께 지도에서 바로 찾기</div>
+            <input id="menuInput" type="text" placeholder="예: 짜장면, 초밥" autocomplete="off" />
+            <div class="reco-actions" style="margin-top:10px">
+              <a id="manualNaver" class="linkbtn naver" target="_blank" rel="noopener">🟢 네이버 지도</a>
+              <a id="manualKakao" class="linkbtn kakao" target="_blank" rel="noopener">🗺️ 카카오맵</a>
+            </div>
+          </div>
+
           <button id="recoBtn" class="btn-accent" style="font-size:16px">✨ 점심 메뉴 추천 받기</button>
           <div class="status" id="recoStatus"></div>
         </div>
@@ -195,12 +205,31 @@
       });
     }
 
-    // --- 지역 입력 (localStorage 저장) ---
+    // --- 지역/메뉴 입력 → 지도 검색 링크 ---
     const regionInput = $('#regionInput');
+    const menuInput = $('#menuInput');
     regionInput.value = localStorage.getItem(REGION_KEY) || '';
+
+    // 지역 + 메뉴를 합쳐 "OO동 △△ 맛집" 형태의 지도 검색어를 만든다.
+    function mapQuery(menu){
+      const region = (regionInput.value || '').trim();
+      const m = (menu || '').trim();
+      const base = [region, m].filter(Boolean).join(' ');
+      return encodeURIComponent((base ? base + ' ' : '') + '맛집');
+    }
+    const naverUrl = (menu) => `https://map.naver.com/p/search/${mapQuery(menu)}`;
+    const kakaoUrl = (menu) => `https://map.kakao.com/?q=${mapQuery(menu)}`;
+
+    // 직접 검색 버튼 링크를 입력에 맞춰 갱신
+    function updateManualLinks(){
+      $('#manualNaver').href = naverUrl(menuInput.value);
+      $('#manualKakao').href = kakaoUrl(menuInput.value);
+    }
     regionInput.addEventListener('input', () => {
       localStorage.setItem(REGION_KEY, regionInput.value.trim());
+      updateManualLinks();
     });
+    menuInput.addEventListener('input', updateManualLinks);
 
     // --- 히스토리 ---
     const historyList = $('#historyList');
@@ -227,18 +256,26 @@
     });
 
     // --- 추천 엔진: 선호 가중치 + 최근 기록 제외 ---
-    function buildPool(){
-      const excluded = new Set(recentMenus(HIST_EXCLUDE_DAYS));
-      const pool = [];
+    // 같은 음식이 여러 유형에 속하면(예: 우동=일식/분식) 하나로 합친다.
+    // 선호 유형에 속한 쪽을 우선해서 라벨/가중치를 고정 → 유형과 음식이 항상 일치.
+    function dedupedMenus(){
+      const byMenu = new Map();
       Object.entries(CATEGORIES).forEach(([cat, menus]) => {
         const preferred = prefs.includes(cat);
-        const weight = prefs.length ? (preferred ? 5 : 1) : 2;
         menus.forEach(menu => {
-          if (excluded.has(menu)) return;
-          pool.push({ menu, cat, weight, preferred });
+          const existing = byMenu.get(menu);
+          if (!existing || (preferred && !existing.preferred)) {
+            byMenu.set(menu, { menu, cat, preferred });
+          }
         });
       });
-      return pool;
+      return [...byMenu.values()].map(m => ({
+        ...m, weight: prefs.length ? (m.preferred ? 5 : 1) : 2
+      }));
+    }
+    function buildPool(){
+      const excluded = new Set(recentMenus(HIST_EXCLUDE_DAYS));
+      return dedupedMenus().filter(m => !excluded.has(m.menu));
     }
     function weightedPick(pool){
       const total = pool.reduce((s, p) => s + p.weight, 0);
@@ -248,15 +285,7 @@
     }
     function pickRecommendation(){
       let pool = buildPool();
-      if (!pool.length) {
-        // 전부 최근에 먹었으면 제외 없이 다시
-        pool = [];
-        Object.entries(CATEGORIES).forEach(([cat, menus]) => {
-          const preferred = prefs.includes(cat);
-          const weight = prefs.length ? (preferred ? 5 : 1) : 2;
-          menus.forEach(menu => pool.push({ menu, cat, weight, preferred }));
-        });
-      }
+      if (!pool.length) pool = dedupedMenus(); // 전부 최근에 먹었으면 제외 없이 다시
       const picks = [];
       const seen = new Set();
       let guard = 0;
@@ -271,11 +300,6 @@
     // --- 결과 렌더 ---
     const recoStatus = $('#recoStatus');
     const recoResult = $('#recoResult');
-
-    function mapQuery(menu){
-      const region = (regionInput.value || '').trim();
-      return encodeURIComponent(`${region ? region + ' ' : ''}${menu} 맛집`);
-    }
 
     function renderReco(picks){
       const top = picks[0];
@@ -298,9 +322,8 @@
         cands.appendChild(el);
       });
 
-      const q = mapQuery(top.menu);
-      $('#naverLink').href = `https://map.naver.com/p/search/${q}`;
-      $('#kakaoLink').href = `https://map.kakao.com/?q=${q}`;
+      $('#naverLink').href = naverUrl(top.menu);
+      $('#kakaoLink').href = kakaoUrl(top.menu);
 
       recoResult.classList.add('show');
     }
@@ -328,6 +351,7 @@
     // ===== Init =====
     renderPrefs();
     renderHistory();
+    updateManualLinks();
 
     // ===== PWA: register Service Worker =====
     if ('serviceWorker' in navigator) {
@@ -341,7 +365,8 @@
     // ===== Tests =====
     (function(){ const pool=buildPool(); console.assert(pool.length>0, 'pool not empty'); console.assert(pool.every(p=>p.weight>0), 'weights positive'); })();
     (function(){ const picks=pickRecommendation(); console.assert(picks.length>=1 && picks.length<=3, '1~3 picks'); console.assert(new Set(picks.map(p=>p.menu)).size===picks.length, 'picks unique'); })();
-    (function(){ regionInput.value='역삼동'; console.assert(decodeURIComponent(mapQuery('보쌈'))==='역삼동 보쌈 맛집', 'region query'); regionInput.value=''; console.assert(decodeURIComponent(mapQuery('보쌈'))==='보쌈 맛집', 'no-region query'); regionInput.value=localStorage.getItem(REGION_KEY)||''; })();
+    (function(){ const names=dedupedMenus().map(m=>m.menu); console.assert(new Set(names).size===names.length, 'menus deduped (no 우동 등 중복)'); dedupedMenus().forEach(m=>{ console.assert((CATEGORIES[m.cat]||[]).includes(m.menu), `유형-음식 일치: ${m.menu} in ${m.cat}`); }); })();
+    (function(){ const r=regionInput.value, mi=menuInput.value; regionInput.value='역삼동'; console.assert(decodeURIComponent(mapQuery('보쌈'))==='역삼동 보쌈 맛집', 'region+menu query'); regionInput.value=''; console.assert(decodeURIComponent(mapQuery('보쌈'))==='보쌈 맛집', 'menu-only query'); console.assert(decodeURIComponent(mapQuery(''))==='맛집', 'empty query'); regionInput.value='판교'; console.assert(decodeURIComponent(mapQuery(''))==='판교 맛집', 'region-only query'); regionInput.value=r; menuInput.value=mi; })();
   </script>
 </body>
 </html>

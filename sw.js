@@ -1,5 +1,5 @@
-/* Simple App Shell cache for Lunch Menu Recommendation (v3.0.0) */
-const CACHE_NAME = 'lunch-reco-v3.0.0';
+/* Simple App Shell cache for Lunch Menu Recommendation (v4.0.0) */
+const CACHE_NAME = 'lunch-reco-v4.0.0';
 const APP_SHELL = [
   './',
   './index.html',
